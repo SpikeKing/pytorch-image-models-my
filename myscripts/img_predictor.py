@@ -13,6 +13,7 @@ from PIL import Image
 from torch.nn import functional as F
 
 import timm
+from myutils.cv_utils import show_img_bgr
 from myutils.project_utils import download_url_img, mkdir_if_not_exist
 from root_dir import DATA_DIR
 from timm.data import resolve_data_config
@@ -44,7 +45,16 @@ class ImgPredictor(object):
             model = model.cuda()
         model.eval()
 
-        config = resolve_data_config({}, model=model)
+        config_dict = {
+            "input_size": (3, 336, 336),
+            "interpolation": "bicubic",
+            "mean": (0.485, 0.456, 0.406),
+            "std": (0.229, 0.224, 0.225),
+            "crop_pct": 1.0  # 不进行Crop
+        }
+
+        config = resolve_data_config(config_dict, model=model)
+        print("[Info] config: {}".format(config))
         transform = create_transform(**config)
         return model, transform
 
@@ -65,7 +75,7 @@ class ImgPredictor(object):
         """
         print('[Info] 预测图像尺寸: {}'.format(img_rgb.shape))
         img_tensor = self.preprocess_img(img_rgb, self.transform)
-        print('[Info] 模型输入: {}'.format(img_rgb.shape))
+        print('[Info] 模型输入: {}'.format(img_tensor.shape))
         with torch.no_grad():
             out = self.model(img_tensor)
         probabilities = F.softmax(out[0], dim=0)
@@ -152,15 +162,16 @@ def main():
     model_path = os.path.join(DATA_DIR, "models", "model_best_c2_20210915.pth.tar")
     base_net = "resnet50"
     num_classes = 2
-    # label_list = ["纸质文档", "拍摄电脑屏幕", "精美生活照", "不确定的类别", "手机截屏", "卡证"]
     label_list = ["纸质文档", "其他"]
+
+    show_img_bgr(cv2.imread(img_path))
 
     me = ImgPredictor(model_path, base_net, num_classes)
     top5_catid, top5_prob = me.predict_img_path(img_path)
     top5_cat = me.convert_catid_2_label(top5_catid, label_list)
     print('[Info] 预测类别: {}'.format(top5_cat))
     print('[Info] 预测概率: {}'.format(top5_prob))
-    me.save_pt(os.path.join(DATA_DIR, "pt_models"))
+    # me.save_pt(os.path.join(DATA_DIR, "pt_models"))  # 存储PT模型
 
 
 if __name__ == '__main__':
