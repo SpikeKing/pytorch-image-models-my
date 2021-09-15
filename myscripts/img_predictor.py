@@ -149,6 +149,7 @@ class ImgPredictor(object):
         print('[Info] 验证 is equal: {}'.format(F.l1_loss(standard_out, script_output)))
 
         print('[Info] 存储完成: {}'.format(pt_path))
+        return pt_path
 
 
 def main():
