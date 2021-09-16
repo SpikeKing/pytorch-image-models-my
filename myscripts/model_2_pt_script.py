@@ -20,7 +20,7 @@ def parse_args():
     """
     处理脚本参数
     """
-    parser = argparse.ArgumentParser(description='转换PB模型')
+    parser = argparse.ArgumentParser(description='PyTorch模型转换PT模型')
     parser.add_argument('-m', dest='model_path', required=True, help='模型路径', type=str)
     parser.add_argument('-n', dest='base_net', required=False, help='basenet', type=str, default="resnet50")
     parser.add_argument('-c', dest='num_classes', required=False, help='类别个数', type=int, default=2)

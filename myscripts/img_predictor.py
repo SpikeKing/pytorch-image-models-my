@@ -125,7 +125,7 @@ class ImgPredictor(object):
         mkdir_if_not_exist(pt_folder_path)
         model_name = self.model_path.split("/")[-1].split(".")[0]
         print('[Info] 模型名称: {}'.format(model_name))
-        dummy_shape = (1, 3, 224, 224)  # 不影响模型
+        dummy_shape = (1, 3, 336, 336)  # 不影响模型
         print('[Info] dummy_shape: {}'.format(dummy_shape))
         if torch.cuda.is_available():
             model_type = "cuda"
