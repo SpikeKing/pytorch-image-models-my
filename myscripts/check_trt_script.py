@@ -37,6 +37,7 @@ def check_trt(model_path, image_size):
     input_image = np.ascontiguousarray(input_image)
     print('[Info] input_image: {}'.format(input_image.shape))
 
+    pycuda.autoinit()  # 必须初始化
     with engine.create_execution_context() as context:
         stream = cuda.Stream()
         bindings = [0] * len(engine)
