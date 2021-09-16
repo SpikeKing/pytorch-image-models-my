@@ -16,6 +16,8 @@ def check_trt(model_path, image_size):
     """
     import pycuda.driver as cuda
     import tensorrt as trt
+    import pycuda.autoinit
+
     print('[Info] model_path: {}'.format(model_path))
     img_shape = (1, 3, image_size, image_size)
     print('[Info] img_shape: {}'.format(img_shape))
