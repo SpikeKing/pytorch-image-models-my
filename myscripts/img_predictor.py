@@ -78,6 +78,7 @@ class ImgPredictor(object):
         print('[Info] 模型输入: {}'.format(img_tensor.shape))
         with torch.no_grad():
             out = self.model(img_tensor)
+        print('[Info] 模型结果raw: {}'.format(out))
         probabilities = F.softmax(out[0], dim=0)
         print('[Info] 模型结果: {}'.format(probabilities.shape))
         if self.num_classes >= 5:
@@ -160,15 +161,19 @@ def main():
     # img_path = os.path.join(DATA_DIR, "document_dataset_mini", "train", "004", "train_000000_004.jpg")
     # img_path = os.path.join(DATA_DIR, "document_dataset_mini", "train", "005", "train_080000_005.jpg")
 
+    case_url = "http://quark-cv-data.oss-cn-hangzhou.aliyuncs.com/gaoyan/project/gt_imaage_for_biaozhu3/" \
+               "O1CN0100fHnP21yK9SLVNC9_!!6000000007053-0-quark.jpg"
+
     model_path = os.path.join(DATA_DIR, "models", "model_best_c2_20210915.pth.tar")
     base_net = "resnet50"
     num_classes = 2
     label_list = ["纸质文档", "其他"]
 
-    show_img_bgr(cv2.imread(img_path))
+    # show_img_bgr(cv2.imread(img_path))
 
     me = ImgPredictor(model_path, base_net, num_classes)
-    top5_catid, top5_prob = me.predict_img_path(img_path)
+    # top5_catid, top5_prob = me.predict_img_path(img_path)
+    top5_catid, top5_prob = me.predict_img_url(case_url)
     top5_cat = me.convert_catid_2_label(top5_catid, label_list)
     print('[Info] 预测类别: {}'.format(top5_cat))
     print('[Info] 预测概率: {}'.format(top5_prob))
