@@ -33,6 +33,7 @@ def check_trt(model_path, image_size):
 
     input_image = np.random.randn(*img_shape).astype(np.float32)  # 图像尺寸
     input_image = np.ascontiguousarray(input_image)
+    print('[Info] input_image: {}'.format(input_image.shape))
 
     with engine.create_execution_context() as context:
         stream = cuda.Stream()
