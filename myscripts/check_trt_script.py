@@ -16,6 +16,7 @@ def check_trt(model_path, image_size):
     """
     import pycuda.driver as cuda
     import tensorrt as trt
+    # 必须导入包，import pycuda.autoinit，否则报错
     import pycuda.autoinit
 
     print('[Info] model_path: {}'.format(model_path))
@@ -37,7 +38,6 @@ def check_trt(model_path, image_size):
     input_image = np.ascontiguousarray(input_image)
     print('[Info] input_image: {}'.format(input_image.shape))
 
-    pycuda.autoinit()  # 必须初始化
     with engine.create_execution_context() as context:
         stream = cuda.Stream()
         bindings = [0] * len(engine)
