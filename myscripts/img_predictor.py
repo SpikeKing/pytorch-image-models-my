@@ -13,7 +13,6 @@ from PIL import Image
 from torch.nn import functional as F
 
 import timm
-from myutils.cv_utils import show_img_bgr
 from myutils.project_utils import download_url_img, mkdir_if_not_exist
 from root_dir import DATA_DIR
 from timm.data import resolve_data_config
