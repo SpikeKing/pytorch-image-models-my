@@ -31,7 +31,7 @@ def check_trt(model_path, image_size):
             print("[Info] binding: {}, binding_idx: {}, size: {}, dtype: {}"
                   .format(binding, binding_idx, size, dtype))
 
-    input_image = np.random.randn(img_shape).astype(np.float32)  # 图像尺寸
+    input_image = np.random.randn(*img_shape).astype(np.float32)  # 图像尺寸
     input_image = np.ascontiguousarray(input_image)
 
     with engine.create_execution_context() as context:
