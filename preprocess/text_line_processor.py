@@ -64,6 +64,9 @@ class TextLineProcessor(object):
             avg_x_list.append(x_max - x_min)
             avg_y_list.append(y_max - y_min)
 
+        if not avg_x_list:
+            return []
+
         new_n = len(avg_x_list)
         avg_x = int(np.average(avg_x_list))
         avg_y = int(np.average(avg_y_list))
