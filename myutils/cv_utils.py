@@ -563,15 +563,14 @@ def write_video(vid_path, frames, fps, h, w):
     return vid_path
 
 
-def merge_imgs(imgs, cols=6, rows=6, is_h=True):
+def merge_imgs(imgs, cols, rows, is_h=True):
     """
-    合并图像
+    多个小图合并成大图
     :param imgs: 图像序列
     :param cols: 行数
     :param rows: 列数
     :param is_h: 是否水平排列
-    :param sk: 间隔，当sk=2时，即0, 2, 4, 6
-    :return: 大图
+    :return: 合并大图
     """
     import numpy as np
 
@@ -588,18 +587,14 @@ def merge_imgs(imgs, cols=6, rows=6, is_h=True):
         for j in range(rows):
             for i in range(cols):
                 idx = j * cols + i
-                if idx > len(imgs) - 1:  # 少于帧数，输出透明帧
+                if idx > len(imgs) - 1:  # 少于帧数，忽略
                     break
-                # print('[Info] 帧的idx: {}, i: {}, j:{}'.format(idx, i, j))
                 large_imgs[(j * h):(j * h + h), (i * w): (i * w + w)] = imgs[idx]
-                # print(large_imgs.shape)
-                # show_png(large_imgs)
-        # show_png(large_imgs)
     else:
         for i in range(cols):
             for j in range(rows):
                 idx = i * cols + j
-                if idx > len(imgs) - 1:  # 少于帧数，输出透明帧
+                if idx > len(imgs) - 1:  # 少于帧数，忽略
                     break
                 large_imgs[(j * h):(j * h + h), (i * w): (i * w + w)] = imgs[idx]
 
@@ -1237,6 +1232,34 @@ def check_point_in_box(pnt, box):
         return False
 
 
+def resize_crop_square(img_arr):
+    """
+    将长条图像调整为近似的正方形
+    """
+    h, w, _ = img_arr.shape
+    w_ratio = float(w) / float(h)
+    if w_ratio > 4:  # 宽大于高
+        x = int(np.sqrt(w_ratio))
+        gap_w = w // x
+        patch_list = []
+        for i in range(x):
+            path_img = img_arr[:, i * gap_w:(i + 1) * gap_w]
+            patch_list.append(path_img)
+        img_out = merge_imgs(patch_list, 1, x)
+    elif w_ratio < 0.25:  # 高大于宽
+        h_ratio = 1.0 / w_ratio
+        x = int(np.sqrt(h_ratio))
+        gap_h = h // x
+        patch_list = []
+        for i in range(x):
+            path_img = img_arr[i * gap_h:(i + 1) * gap_h, :]
+            patch_list.append(path_img)
+        img_out = merge_imgs(patch_list, x, 1)
+    else:
+        img_out = img_arr
+    return img_out
+
+
 def image_to_base64(image_np, ext='.jpg'):
     """
     image转换为base64, ext是编码格式，'.jpg'和'.png'都支持
@@ -1258,6 +1281,8 @@ def base64_2_image(image_encode):
     np_arr = np.asarray(bytearray(image_content)).reshape(1, -1)
     image = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
     return image
+
+
 
 
 def main():
