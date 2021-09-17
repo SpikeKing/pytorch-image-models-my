@@ -130,6 +130,14 @@ class TextLineProcessor(object):
         if data_idx % 1000 == 0:
             print('[Info] 处理完成: {}'.format(data_idx))
 
+    @staticmethod
+    def process_line_try(data_idx, data_line, out_file_path):
+        try:
+            TextLineProcessor.process_line(data_idx, data_line, out_file_path)
+        except Exception as e:
+            print('[Error] data_idx: {}'.format(data_idx))
+            print('[Error] e: {}'.format(e))
+
     def process(self):
         print('[Info] 处理文件: {}'.format(self.file_path))
         data_lines = read_file(self.file_path)
@@ -139,8 +147,8 @@ class TextLineProcessor(object):
 
         pool = Pool(processes=40)
         for data_idx, data_line in enumerate(data_lines):
-            pool.apply_async(TextLineProcessor.process_line, (data_idx, data_line, self.out_file_path))
-            # TextLineProcessor.process_line(data_idx, data_line, self.out_file_path)
+            pool.apply_async(TextLineProcessor.process_line_try, (data_idx, data_line, self.out_file_path))
+            # TextLineProcessor.process_line_try(data_idx, data_line, self.out_file_path)
             # break
         pool.close()
         pool.join()
