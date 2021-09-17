@@ -957,7 +957,7 @@ def check_english_str(string):
         return False
 
 
-def format_samples_num(a_list, num=20000):
+def get_fixed_samples(a_list, num=20000):
     """
     固定数量的样本
     """
