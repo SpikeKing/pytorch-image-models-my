@@ -28,6 +28,7 @@ class TextLineProcessor(object):
         self.file_path = os.path.join(DATA_DIR, "files", "common_full.txt")  # 文件
         self.out_file_path = os.path.join(DATA_DIR, "files",
                                           "common_full_out.{}.txt".format(get_current_time_str()))  # 输出文件
+        self.mini_file_path = os.path.join(DATA_DIR, "files", "common_full_mini.txt")  # 输出文件
 
     @staticmethod
     def save_img_path(img_bgr, img_name, oss_root_dir=""):
@@ -95,7 +96,6 @@ class TextLineProcessor(object):
         box_list = box_list[:new_n // 4]
         return box_list
 
-
     @staticmethod
     def process_line(data_idx, data_line, out_file_path):
         data = eval(data_line.strip())
@@ -157,10 +157,66 @@ class TextLineProcessor(object):
         pool.join()
         print('[Info] 处理完成: {}'.format(self.out_file_path))
 
+    def process_mini(self):
+        """
+        生成mini数据集，包含没有resize的数据
+        """
+        print('[Info] 处理文件: {}'.format(self.file_path))
+        data_lines = read_file(self.file_path)
+        print('[Info] 样本数: {}'.format(len(data_lines)))
+        for data_idx, data_line in enumerate(data_lines):
+            print('[Info] data_idx: {}'.format(data_idx))
+            data = eval(data_line.strip())
+            url = data["url"]
+            labels = data['label']
+            coords = data['coord']
+            img_name_x = url.split("/")[-1].split(".")[0]  # 图像名称
+            _, img_bgr = download_url_img(url)
+
+            # 处理标签
+            for i in range(len(labels)):
+                label = labels[i]
+                if label in [1, 2, 3, 4]:
+                    coord = np.array(coords[i])
+
+                    # 原始图像
+                    crop_img = crop_img_from_coord(coord, img_bgr)
+                    img_name = "{}_s_{}_s_{}_s_ori.jpg".format(img_name_x, str(i), str(label))
+                    img_url = TextLineProcessor.save_img_path(crop_img, img_name)
+                    write_line(self.mini_file_path, "{}\t{}".format(img_url, str(label)))
+
+                    # 扁平图像
+                    img_out = resize_crop_square(crop_img)
+                    img_name = "{}_s_{}_s_{}_s_squ.jpg".format(img_name_x, str(i), str(label))
+                    h, w, _ = img_out.shape
+                    if min(h, w) < 30:
+                        continue
+                    img_url = TextLineProcessor.save_img_path(img_out, img_name)
+                    write_line(self.mini_file_path, "{}\t{}".format(img_url, str(label)))
+            # 处理负例
+            neg_boxes = TextLineProcessor.get_negative_box(img_bgr, coords)
+            for i, neg_box in enumerate(neg_boxes):
+                neg_label = 0
+
+                # 原始图像
+                crop_img = get_cropped_patch(img_bgr, neg_box)
+                img_name = "{}_s_{}_s_{}_s_ori.jpg".format(img_name_x, str(i + len(labels)), str(neg_label))
+                img_url = TextLineProcessor.save_img_path(crop_img, img_name)
+                write_line(self.mini_file_path, "{}\t{}".format(img_url, str(neg_label)))
+
+                img_out = resize_crop_square(crop_img)
+                # 负例标签是0
+                img_name = "{}_s_{}_s_{}_s_squ.jpg".format(img_name_x, str(i + len(labels)), str(neg_label))
+                img_url = TextLineProcessor.save_img_path(img_out, img_name)
+                write_line(self.mini_file_path, "{}\t{}".format(img_url, str(neg_label)))
+            if data_idx == 100:
+                break
+        print('[Info] 处理完成: {}'.format(self.mini_file_path))
+
 
 def main():
     tlp = TextLineProcessor()
-    tlp.process()
+    # tlp.process_mini()
 
 
 if __name__ == "__main__":
