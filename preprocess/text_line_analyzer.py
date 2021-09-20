@@ -24,6 +24,7 @@ class TextLineAnalyzer(object):
         self.file_name = os.path.join(DATA_DIR, "files", "common_full_out_v1_200w.txt")
         self.out_folder = os.path.join(DATA_DIR, "files", "common_full_out_v1_200w")
         self.ds_folder = os.path.join(ROOT_DIR, "..", "datasets", "text_line_v1_1_200w")
+        self.ds_folder_txt = os.path.join(ROOT_DIR, "..", "datasets", "text_line_v1_1_200w.txt")  # 存储路径文件
         mkdir_if_not_exist(self.out_folder)
         mkdir_if_not_exist(self.ds_folder)
 
@@ -54,17 +55,18 @@ class TextLineAnalyzer(object):
         print('[Info] 数据集拆分完成: {}'.format(self.out_folder))
 
     @staticmethod
-    def process_line(img_idx, img_url, img_folder, ds_type):
+    def process_line(img_idx, img_url, img_folder, img_folder_txt, ds_type):
         _, img_bgr = download_url_img(img_url)
         img_path = os.path.join(img_folder, "{}_{}.jpg".format(ds_type, str(img_idx).zfill(7)))
         cv2.imwrite(img_path, img_bgr)
+        write_line(img_folder_txt, img_path)
         if img_idx % 1000 == 0:
             print('[Info] img_idx: {}'.format(img_idx))
 
     @staticmethod
-    def process_line_try(img_idx, img_url, img_folder, ds_type):
+    def process_line_try(img_idx, img_url, img_folder, img_folder_txt, ds_type):
         try:
-            TextLineAnalyzer.process_line(img_idx, img_url, img_folder, ds_type)
+            TextLineAnalyzer.process_line(img_idx, img_url, img_folder, img_folder_txt, ds_type)
         except Exception as e:
             print('[Error] {}, {}'.format(img_idx, img_url))
             print('[Error] {}'.format(e))
@@ -76,6 +78,7 @@ class TextLineAnalyzer(object):
         print('[Info] 数据文件夹: {}'.format(self.out_folder))
         paths_list, names_list = traverse_dir_files(self.out_folder)
         print('[Info] 数据集文件夹: {}'.format(self.ds_folder))
+        print('[Info] 数据集文件夹: {}'.format(self.ds_folder_txt))
         pool = Pool(processes=100)
         for path in paths_list:
             file_name = path.split("/")[-1].split(".")[0]
@@ -96,13 +99,15 @@ class TextLineAnalyzer(object):
                 # sample_num = 2
             else:
                 raise Exception("ds_type error")
+
             if is_balance:
                 url_list = get_fixed_samples(data_lines, sample_num)
             else:
                 url_list = data_lines
             for img_idx, img_url in enumerate(url_list):
                 # TextLineAnalyzer.process_line_try(img_idx, img_url, label_dir, ds_type)
-                pool.apply_async(TextLineAnalyzer.process_line_try, (img_idx, img_url, label_dir, ds_type))
+                pool.apply_async(TextLineAnalyzer.process_line_try,
+                                 (img_idx, img_url, label_dir, self.ds_folder_txt, ds_type))
 
         pool.close()
         pool.join()
