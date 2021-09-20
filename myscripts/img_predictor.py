@@ -152,7 +152,7 @@ class ImgPredictor(object):
         return pt_path
 
 
-def main():
+def main_4_doc_clz():
     img_path = os.path.join(DATA_DIR, "document_dataset_mini", "train", "000", "train_040000_000.jpg")
     # img_path = os.path.join(DATA_DIR, "document_dataset_mini", "train", "001", "train_060000_001.jpg")
     # img_path = os.path.join(DATA_DIR, "document_dataset_mini", "train", "002", "train_020000_002.jpg")
@@ -179,5 +179,30 @@ def main():
     # me.save_pt(os.path.join(DATA_DIR, "pt_models"))  # 存储PT模型
 
 
+def main_4_text_line_clz():
+    img_path = os.path.join(DATA_DIR, "datasets", "text_line_v1_200w", "train", "000", "train_0000000.jpg")  # 其他
+    # img_path = os.path.join(DATA_DIR, "datasets", "text_line_v1_200w", "train", "001", "train_0000000.jpg")  # 印刷公式
+    # img_path = os.path.join(DATA_DIR, "datasets", "text_line_v1_200w", "train", "002", "train_0000000.jpg")  # 印刷文本
+    # img_path = os.path.join(DATA_DIR, "datasets", "text_line_v1_200w", "train", "003", "train_0000000.jpg")  # 手写公式
+    # img_path = os.path.join(DATA_DIR, "datasets", "text_line_v1_200w", "train", "004", "train_0000000.jpg")  # 手写文本
+    # img_path = os.path.join(DATA_DIR, "document_dataset_mini", "train", "005", "train_080000_005.jpg")
+
+    model_path = os.path.join(DATA_DIR, "models", "model_best_tlc_c5_20210920.pth.tar")
+    base_net = "resnet50"
+    num_classes = 5
+    label_list = ["其他", "印刷公式", "印刷文本", "手写公式", "手写文本"]
+
+    # show_img_bgr(cv2.imread(img_path))
+
+    me = ImgPredictor(model_path, base_net, num_classes)
+    top5_catid, top5_prob = me.predict_img_path(img_path)
+    # top5_catid, top5_prob = me.predict_img_url(case_url)
+    top5_cat = me.convert_catid_2_label(top5_catid, label_list)
+    print('[Info] 预测类别: {}'.format(top5_cat))
+    print('[Info] 预测概率: {}'.format(top5_prob))
+    # me.save_pt(os.path.join(DATA_DIR, "pt_models"))  # 存储PT模型
+
+
 if __name__ == '__main__':
-    main()
+    # main_4_doc_clz()
+    main_4_text_line_clz()
