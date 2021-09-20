@@ -23,7 +23,7 @@ class TextLineAnalyzer(object):
     def __init__(self):
         self.file_name = os.path.join(DATA_DIR, "files", "common_full_out_v1_200w.txt")
         self.out_folder = os.path.join(DATA_DIR, "files", "common_full_out_v1_200w")
-        self.ds_folder = os.path.join(ROOT_DIR, "..", "datasets", "text_line_v1_200w")
+        self.ds_folder = os.path.join(ROOT_DIR, "..", "datasets", "text_line_v1_1_200w")
         mkdir_if_not_exist(self.out_folder)
         mkdir_if_not_exist(self.ds_folder)
 
@@ -69,7 +69,7 @@ class TextLineAnalyzer(object):
             print('[Error] {}, {}'.format(img_idx, img_url))
             print('[Error] {}'.format(e))
 
-    def create_dataset(self):
+    def create_dataset(self, is_balance):
         """
         创建DIR
         """
@@ -96,7 +96,10 @@ class TextLineAnalyzer(object):
                 # sample_num = 2
             else:
                 raise Exception("ds_type error")
-            url_list = get_fixed_samples(data_lines, sample_num)
+            if is_balance:
+                url_list = get_fixed_samples(data_lines, sample_num)
+            else:
+                url_list = data_lines
             for img_idx, img_url in enumerate(url_list):
                 # TextLineAnalyzer.process_line_try(img_idx, img_url, label_dir, ds_type)
                 pool.apply_async(TextLineAnalyzer.process_line_try, (img_idx, img_url, label_dir, ds_type))
@@ -108,7 +111,7 @@ class TextLineAnalyzer(object):
 
 def main():
     tla = TextLineAnalyzer()
-    tla.create_dataset()
+    tla.create_dataset(is_balance=False)
 
 
 if __name__ == '__main__':
