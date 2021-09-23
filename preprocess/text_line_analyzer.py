@@ -21,8 +21,8 @@ from root_dir import DATA_DIR, ROOT_DIR
 
 class TextLineAnalyzer(object):
     def __init__(self):
-        self.file_name = os.path.join(DATA_DIR, "files", "common_full_out_v1_200w.txt")
-        self.out_folder = os.path.join(DATA_DIR, "files", "common_full_out_v1_200w")
+        self.file_name = os.path.join(DATA_DIR, "files", "common_full_out_v2_all.txt")
+        self.out_folder = os.path.join(DATA_DIR, "files", "common_full_out_v2_all")
         self.ds_folder = os.path.join(ROOT_DIR, "..", "datasets", "text_line_v1_1_200w")
         self.ds_folder_txt = os.path.join(ROOT_DIR, "..", "datasets", "text_line_v1_1_200w.txt")  # 存储路径文件
         mkdir_if_not_exist(self.out_folder)
@@ -116,7 +116,8 @@ class TextLineAnalyzer(object):
 
 def main():
     tla = TextLineAnalyzer()
-    tla.create_dataset(is_balance=False)
+    tla.split_train_and_val()
+    # tla.create_dataset(is_balance=False)
 
 
 if __name__ == '__main__':

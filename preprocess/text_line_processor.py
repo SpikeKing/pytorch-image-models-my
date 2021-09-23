@@ -25,10 +25,24 @@ class TextLineProcessor(object):
     文本行分类数据集的创建类
     """
     def __init__(self):
-        self.file_path = os.path.join(DATA_DIR, "files", "common_full.txt")  # 文件
-        self.out_file_path = os.path.join(DATA_DIR, "files",
-                                          "common_full_out.{}.txt".format(get_current_time_str()))  # 输出文件
-        self.mini_file_path = os.path.join(DATA_DIR, "files", "common_full_mini.txt")  # 输出文件
+        # v1
+        # self.file_path = os.path.join(DATA_DIR, "files", "common_full.txt")  # 文件
+        # self.out_file_path = os.path.join(DATA_DIR, "files",
+        #                                   "common_full_out.{}.txt".format(get_current_time_str()))  # 输出文件
+        # self.mini_file_path = os.path.join(DATA_DIR, "files", "common_full_mini.txt")  # 输出文件
+
+        # v2
+        self.file_path = os.path.join(DATA_DIR, "files", "4wedu+2wopensource+2.5wnature.txt")
+        self.train_file_path = os.path.join(DATA_DIR, "files", "text_line_dataset_v1_1_raw.train.txt")
+        self.val_file_path = os.path.join(DATA_DIR, "files", "text_line_dataset_v1_1_raw.val.txt")
+
+        # 输出文件
+        self.out_train_file_path = \
+            os.path.join(DATA_DIR, "files", "text_line_dataset_v1_1.train.{}.txt".format(get_current_time_str()))
+        self.out_val_file_path = \
+            os.path.join(DATA_DIR, "files", "text_line_dataset_v1_1.val.{}.txt".format(get_current_time_str()))
+
+        self.mini_file_path = os.path.join(DATA_DIR, "files", "text_line_dataset_v1_1_mini.txt")  # 输出文件
 
     @staticmethod
     def save_img_path(img_bgr, img_name, oss_root_dir=""):
@@ -37,7 +51,7 @@ class TextLineProcessor(object):
         """
         from x_utils.oss_utils import save_img_2_oss
         if not oss_root_dir:
-            oss_root_dir = "zhengsheng.wcl/Text-Line-Clz/datasets/v1/{}".format(get_current_day_str())
+            oss_root_dir = "zhengsheng.wcl/Text-Line-Clz/datasets/v1_1_square/{}".format(get_current_day_str())
         img_url = save_img_2_oss(img_bgr, img_name, oss_root_dir)
         return img_url
 
@@ -87,7 +101,7 @@ class TextLineProcessor(object):
                 s_y = max(j*y_step, 0)
                 e_y = min(s_y + y_step, h)
                 iou = np.sum(img_mask[s_y:e_y, s_x:e_x]) / ((e_x - s_x) * (e_y - s_y))
-                if iou < 0.1:
+                if iou < 0.001:
                     bbox = [s_x, s_y, e_x, e_y]
                     box_list.append(bbox)
 
@@ -97,7 +111,7 @@ class TextLineProcessor(object):
         return box_list
 
     @staticmethod
-    def process_line(data_idx, data_line, out_file_path):
+    def process_line(data_idx, data_line, out_file_path, is_square=True):
         data = eval(data_line.strip())
         url = data["url"]
         labels = data['label']
@@ -108,13 +122,17 @@ class TextLineProcessor(object):
         # 处理标签
         for i in range(len(labels)):
             label = labels[i]
-            if label in [1, 2, 3, 4]:
+            if label in [1, 2, 3, 4, 5]:
                 coord = np.array(coords[i])
                 crop_img = crop_img_from_coord(coord, img_bgr)
-                img_name = "{}_s_{}_s_{}.jpg".format(img_name_x, str(i), str(label))
-                img_out = resize_crop_square(crop_img)
+                if is_square:
+                    img_name = "{}_s_{}_s_{}_square.jpg".format(img_name_x, str(i), str(label))
+                    img_out = resize_crop_square(crop_img)
+                else:
+                    img_name = "{}_s_{}_s_{}.jpg".format(img_name_x, str(i), str(label))
+                    img_out = crop_img
                 h, w, _ = img_out.shape
-                if min(h, w) < 30:
+                if min(h, w) < 20:
                     continue
                 img_url = TextLineProcessor.save_img_path(img_out, img_name)
                 write_line(out_file_path, "{}\t{}".format(img_url, str(label)))
@@ -122,11 +140,15 @@ class TextLineProcessor(object):
         # 处理负例
         neg_boxes = TextLineProcessor.get_negative_box(img_bgr, coords)
         for i, neg_box in enumerate(neg_boxes):
+            neg_label = 0  # 负例标签是0
             crop_img = get_cropped_patch(img_bgr, neg_box)
-            img_out = resize_crop_square(crop_img)
-            neg_label = 0
-            # 负例标签是0
-            img_name = "{}_s_{}_s_{}.jpg".format(img_name_x, str(i + len(labels)), str(neg_label))
+            if is_square:
+                img_name = "{}_s_{}_s_{}_square.jpg".format(img_name_x, str(i + len(labels)), str(neg_label))
+                img_out = resize_crop_square(crop_img)
+            else:
+                img_name = "{}_s_{}_s_{}.jpg".format(img_name_x, str(i + len(labels)), str(neg_label))
+                img_out = crop_img
+
             img_url = TextLineProcessor.save_img_path(img_out, img_name)
             write_line(out_file_path, "{}\t{}".format(img_url, str(neg_label)))
 
@@ -141,21 +163,50 @@ class TextLineProcessor(object):
             print('[Error] data_idx: {}'.format(data_idx))
             print('[Error] e: {}'.format(e))
 
-    def process(self):
+    def split_train_and_val(self):
+        """
+        将样本拆分为训练数据和验证数据
+        """
         print('[Info] 处理文件: {}'.format(self.file_path))
         data_lines = read_file(self.file_path)
         print('[Info] 样本数: {}'.format(len(data_lines)))
-        # random.seed(47)
-        # random.shuffle(data_lines)
+        random.seed(47)
+        random.shuffle(data_lines)
+        n_split = len(data_lines) // 20 * 19
+        train_data_lines = data_lines[:n_split]
+        val_data_lines = data_lines[n_split:]
+        print('[Info] 训练数据: {}, 验证数据: {}'.format(len(train_data_lines), len(val_data_lines)))
+        if not os.path.exists(self.train_file_path):
+            write_list_to_file(self.train_file_path, train_data_lines)
+            write_list_to_file(self.val_file_path, train_data_lines)
+            print('[Info] 写入完成: {}'.format(self.train_file_path))
+            print('[Info] 写入完成: {}'.format(self.val_file_path))
+        else:
+            print('[Info] 已完成: {}'.format(self.train_file_path))
+            print('[Info] 已完成: {}'.format(self.val_file_path))
 
-        pool = Pool(processes=40)
-        for data_idx, data_line in enumerate(data_lines):
-            pool.apply_async(TextLineProcessor.process_line_try, (data_idx, data_line, self.out_file_path))
-            # TextLineProcessor.process_line_try(data_idx, data_line, self.out_file_path)
-            # break
+    def process(self):
+        print('[Info] 处理文件: {}'.format(self.train_file_path))
+        print('[Info] 处理文件: {}'.format(self.val_file_path))
+        train_data_lines = read_file(self.train_file_path)
+        val_data_lines = read_file(self.val_file_path)
+        print('[Info] 样本数: {}'.format(len(train_data_lines)))
+        print('[Info] 样本数: {}'.format(len(val_data_lines)))
+        random.seed(47)
+        random.shuffle(train_data_lines)
+        random.shuffle(val_data_lines)
+
+        pool = Pool(processes=100)
+        for data_idx, data_line in enumerate(train_data_lines):
+            # TextLineProcessor.process_line_try(data_idx, data_line, self.out_train_file_path)
+            pool.apply_async(TextLineProcessor.process_line_try, (data_idx, data_line, self.out_train_file_path))
+        for data_idx, data_line in enumerate(val_data_lines):
+            # TextLineProcessor.process_line_try(data_idx, data_line, self.out_val_file_path)
+            pool.apply_async(TextLineProcessor.process_line_try, (data_idx, data_line, self.out_val_file_path))
         pool.close()
         pool.join()
-        print('[Info] 处理完成: {}'.format(self.out_file_path))
+        print('[Info] 处理完成: {}'.format(self.out_train_file_path))
+        print('[Info] 处理完成: {}'.format(self.out_val_file_path))
 
     def process_mini(self):
         """
@@ -216,7 +267,7 @@ class TextLineProcessor(object):
 
 def main():
     tlp = TextLineProcessor()
-    # tlp.process_mini()
+    tlp.process()
 
 
 if __name__ == "__main__":
