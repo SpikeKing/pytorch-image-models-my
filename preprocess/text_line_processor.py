@@ -14,6 +14,7 @@ p = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if p not in sys.path:
     sys.path.append(p)
 
+from myutils.make_html_page import make_html_page
 from myutils.project_utils import *
 from myutils.cv_utils import *
 from myutils.crop_img_from_coord import crop_img_from_coord
@@ -45,13 +46,17 @@ class TextLineProcessor(object):
         self.mini_file_path = os.path.join(DATA_DIR, "files", "text_line_dataset_v1_1_mini.txt")  # 输出文件
 
     @staticmethod
-    def save_img_path(img_bgr, img_name, oss_root_dir=""):
+    def save_img_path(img_bgr, img_name, oss_root_dir="", is_square=False):
         """
         上传图像
         """
         from x_utils.oss_utils import save_img_2_oss
         if not oss_root_dir:
-            oss_root_dir = "zhengsheng.wcl/Text-Line-Clz/datasets/v1_1_square/{}".format(get_current_day_str())
+            if is_square:
+                oss_root_dir = "zhengsheng.wcl/Text-Line-Clz/datasets/v1_1_square/{}".format(get_current_day_str())
+            else:
+                oss_root_dir = "zhengsheng.wcl/Text-Line-Clz/datasets/v1_1/{}".format(get_current_day_str())
+
         img_url = save_img_2_oss(img_bgr, img_name, oss_root_dir)
         return img_url
 
@@ -134,7 +139,7 @@ class TextLineProcessor(object):
                 h, w, _ = img_out.shape
                 if min(h, w) < 20:
                     continue
-                img_url = TextLineProcessor.save_img_path(img_out, img_name)
+                img_url = TextLineProcessor.save_img_path(img_out, img_name, is_square=is_square)
                 write_line(out_file_path, "{}\t{}".format(img_url, str(label)))
 
         # 处理负例
@@ -149,16 +154,16 @@ class TextLineProcessor(object):
                 img_name = "{}_s_{}_s_{}.jpg".format(img_name_x, str(i + len(labels)), str(neg_label))
                 img_out = crop_img
 
-            img_url = TextLineProcessor.save_img_path(img_out, img_name)
+            img_url = TextLineProcessor.save_img_path(img_out, img_name, is_square=is_square)
             write_line(out_file_path, "{}\t{}".format(img_url, str(neg_label)))
 
         if data_idx % 1000 == 0:
             print('[Info] 处理完成: {}'.format(data_idx))
 
     @staticmethod
-    def process_line_try(data_idx, data_line, out_file_path):
+    def process_line_try(data_idx, data_line, out_file_path, is_square):
         try:
-            TextLineProcessor.process_line(data_idx, data_line, out_file_path)
+            TextLineProcessor.process_line(data_idx, data_line, out_file_path, is_square)
         except Exception as e:
             print('[Error] data_idx: {}'.format(data_idx))
             print('[Error] e: {}'.format(e))
@@ -178,7 +183,7 @@ class TextLineProcessor(object):
         print('[Info] 训练数据: {}, 验证数据: {}'.format(len(train_data_lines), len(val_data_lines)))
         if not os.path.exists(self.train_file_path):
             write_list_to_file(self.train_file_path, train_data_lines)
-            write_list_to_file(self.val_file_path, train_data_lines)
+            write_list_to_file(self.val_file_path, val_data_lines)
             print('[Info] 写入完成: {}'.format(self.train_file_path))
             print('[Info] 写入完成: {}'.format(self.val_file_path))
         else:
@@ -198,75 +203,62 @@ class TextLineProcessor(object):
 
         pool = Pool(processes=100)
         for data_idx, data_line in enumerate(train_data_lines):
-            # TextLineProcessor.process_line_try(data_idx, data_line, self.out_train_file_path)
-            pool.apply_async(TextLineProcessor.process_line_try, (data_idx, data_line, self.out_train_file_path))
+            # TextLineProcessor.process_line_try(data_idx, data_line, self.out_train_file_path, is_square=False)
+            pool.apply_async(TextLineProcessor.process_line_try, (data_idx, data_line, self.out_train_file_path, False))
         for data_idx, data_line in enumerate(val_data_lines):
             # TextLineProcessor.process_line_try(data_idx, data_line, self.out_val_file_path)
-            pool.apply_async(TextLineProcessor.process_line_try, (data_idx, data_line, self.out_val_file_path))
+            pool.apply_async(TextLineProcessor.process_line_try, (data_idx, data_line, self.out_val_file_path, False))
         pool.close()
         pool.join()
         print('[Info] 处理完成: {}'.format(self.out_train_file_path))
         print('[Info] 处理完成: {}'.format(self.out_val_file_path))
 
-    def process_mini(self):
+    @staticmethod
+    def show_num_dict(num_dict):
+        items = sort_dict_by_value(num_dict)
+        all_num = 0
+        for _, num in items:
+            all_num += num
+        for label, num in items:
+            print('[Info] \t l: {}, n: {}, p: {}%'.format(label, num, round(safe_div(num, all_num) * 100, 2)))
+
+    @staticmethod
+    def show_mini_dataset():
         """
         生成mini数据集，包含没有resize的数据
         """
-        print('[Info] 处理文件: {}'.format(self.file_path))
-        data_lines = read_file(self.file_path)
+        file_path = os.path.join(DATA_DIR, "files", "text_line_dataset_v1_1_mini.txt")
+        out_html_path = os.path.join(DATA_DIR, "files", "text_line_dataset_v1_1_mini.html")
+        print('[Info] 文件: {}'.format(file_path))
+        data_lines = read_file(file_path)
+        random.seed(47)
+        random.shuffle(data_lines)
+        data_lines = data_lines[:200]
         print('[Info] 样本数: {}'.format(len(data_lines)))
-        for data_idx, data_line in enumerate(data_lines):
-            print('[Info] data_idx: {}'.format(data_idx))
-            data = eval(data_line.strip())
-            url = data["url"]
-            labels = data['label']
-            coords = data['coord']
-            img_name_x = url.split("/")[-1].split(".")[0]  # 图像名称
+        label_str_dict = {"0": "其他", "1": "印刷公式", "2": "印刷文本", "3": "手写公式", "4": "手写文本", "5": "艺术字"}
+        label_count_dict = collections.defaultdict(int)
+
+        item_list = []
+        for data_line in data_lines:
+            url, label = data_line.split("\t")
             _, img_bgr = download_url_img(url)
+            h, w, _ = img_bgr.shape
+            if h * w < 2000:
+                continue
+            shape_str = str(img_bgr.shape)
+            label_str = label_str_dict[str(label)]
+            label_count_dict[label_str] += 1
+            item_list.append([url, label_str, shape_str])
 
-            # 处理标签
-            for i in range(len(labels)):
-                label = labels[i]
-                if label in [1, 2, 3, 4]:
-                    coord = np.array(coords[i])
-
-                    # 原始图像
-                    crop_img = crop_img_from_coord(coord, img_bgr)
-                    img_name = "{}_s_{}_s_{}_s_ori.jpg".format(img_name_x, str(i), str(label))
-                    img_url = TextLineProcessor.save_img_path(crop_img, img_name)
-                    write_line(self.mini_file_path, "{}\t{}".format(img_url, str(label)))
-
-                    # 扁平图像
-                    img_out = resize_crop_square(crop_img)
-                    img_name = "{}_s_{}_s_{}_s_squ.jpg".format(img_name_x, str(i), str(label))
-                    h, w, _ = img_out.shape
-                    if min(h, w) < 30:
-                        continue
-                    img_url = TextLineProcessor.save_img_path(img_out, img_name)
-                    write_line(self.mini_file_path, "{}\t{}".format(img_url, str(label)))
-            # 处理负例
-            neg_boxes = TextLineProcessor.get_negative_box(img_bgr, coords)
-            for i, neg_box in enumerate(neg_boxes):
-                neg_label = 0
-
-                # 原始图像
-                crop_img = get_cropped_patch(img_bgr, neg_box)
-                img_name = "{}_s_{}_s_{}_s_ori.jpg".format(img_name_x, str(i + len(labels)), str(neg_label))
-                img_url = TextLineProcessor.save_img_path(crop_img, img_name)
-                write_line(self.mini_file_path, "{}\t{}".format(img_url, str(neg_label)))
-
-                img_out = resize_crop_square(crop_img)
-                # 负例标签是0
-                img_name = "{}_s_{}_s_{}_s_squ.jpg".format(img_name_x, str(i + len(labels)), str(neg_label))
-                img_url = TextLineProcessor.save_img_path(img_out, img_name)
-                write_line(self.mini_file_path, "{}\t{}".format(img_url, str(neg_label)))
-            if data_idx == 100:
-                break
-        print('[Info] 处理完成: {}'.format(self.mini_file_path))
+        TextLineProcessor.show_num_dict(label_count_dict)
+        make_html_page(out_html_path, item_list)
+        print('[Info] 写入完成: {}'.format(out_html_path))
 
 
 def main():
     tlp = TextLineProcessor()
+    # tlp.split_train_and_val()
+    # tlp.show_mini_dataset()
     tlp.process()
 
 

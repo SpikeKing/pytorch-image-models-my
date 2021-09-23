@@ -970,3 +970,4 @@ def get_fixed_samples(a_list, num=20000):
     random.shuffle(x_list)
     x_list = x_list[:num]
     return x_list
+
