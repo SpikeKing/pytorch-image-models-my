@@ -33,7 +33,7 @@ class TextLineProcessor(object):
         # self.mini_file_path = os.path.join(DATA_DIR, "files", "common_full_mini.txt")  # 输出文件
 
         # v2
-        self.file_path = os.path.join(DATA_DIR, "files", "4wedu+2wopensource+2.5wnature.txt")
+        self.file_path = os.path.join(DATA_DIR, "files", "4wedu+2wopensource+2.5wnature.labeled-10000.1.txt")
         self.train_file_path = os.path.join(DATA_DIR, "files", "text_line_dataset_v1_1_raw.train.txt")
         self.val_file_path = os.path.join(DATA_DIR, "files", "text_line_dataset_v1_1_raw.val.txt")
 
@@ -259,7 +259,7 @@ def main():
     tlp = TextLineProcessor()
     # tlp.split_train_and_val()
     # tlp.process()
-    tlp.show_mini_dataset()
+    tlp.split_labeled_files()
 
 
 if __name__ == "__main__":
