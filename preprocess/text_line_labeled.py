@@ -106,7 +106,7 @@ class TextLineLabeled(object):
         coords = data['coord']
         img_name_x = url.split("/")[-1].split(".")[0]  # 图像名称
         _, img_bgr = download_url_img(url)
-        img_bgr = cv2.resize(img_bgr, None, fx=5, fy=5)
+
 
         # 处理标签
         for i in range(len(labels)):
@@ -114,6 +114,7 @@ class TextLineLabeled(object):
             if label in [1, 2, 3, 4, 5]:
                 coord = np.array(coords[i])
                 crop_img = crop_img_from_coord(coord, img_bgr)
+                crop_img = cv2.resize(crop_img, None, fx=5.0, fy=5.0)   # 有助于提升标注效率
                 img_name = "{}_s_{}_s_{}.jpg".format(img_name_x, str(i), str(label))
                 img_out = crop_img
                 h, w, _ = img_out.shape
@@ -153,6 +154,9 @@ class TextLineLabeled(object):
 
         pool = Pool(processes=100)
         for data_idx, data_line in enumerate(data_lines):
+            # TextLineLabeled.process_line_try(data_idx, data_line, self.out_file_path)
+            # if data_idx == 10:
+            #     break
             pool.apply_async(TextLineLabeled.process_line_try, (data_idx, data_line, self.out_file_path))
         pool.close()
         pool.join()
