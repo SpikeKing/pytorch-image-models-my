@@ -106,6 +106,7 @@ class TextLineLabeled(object):
         coords = data['coord']
         img_name_x = url.split("/")[-1].split(".")[0]  # 图像名称
         _, img_bgr = download_url_img(url)
+        img_bgr = cv2.resize(img_bgr, None, fx=5, fy=5)
 
         # 处理标签
         for i in range(len(labels)):
@@ -179,11 +180,31 @@ class TextLineLabeled(object):
         write_list_to_file(out_file2_format.format(len(rest_lines)), rest_lines)
         print('[Info] 处理完成: {}'.format(file_path))
 
+    @staticmethod
+    def generate_labeled():
+        file_path = os.path.join(DATA_DIR, "files", "4wedu+2wopensource+2.5wnature.labeled-10000.1.out.txt")
+        out_file1_path = os.path.join(DATA_DIR, "files", "4wedu+2wopensource+2.5wnature.labeled-10000.1.out1.xlsx")
+        out_file2_path = os.path.join(DATA_DIR, "files", "4wedu+2wopensource+2.5wnature.labeled-10000.1.out2.xlsx")
+        print('[Info] 文件名: {}'.format(file_path))
+        data_lines = read_file(file_path)
+        print('[Info] 文本行数: {}'.format(len(data_lines)))
+
+        item_list = []
+        for data_line in data_lines:
+            url, label = data_line.split("\t")
+            label_str_dict = {"0": "其他", "1": "印刷公式", "2": "印刷文本", "3": "手写公式", "4": "手写文本", "5": "艺术字"}
+            label_str = label_str_dict[label]
+            item_list.append([url, label_str])
+
+        write_list_to_excel(out_file1_path, ["url", "预标签"], item_list[:50000])
+        write_list_to_excel(out_file2_path, ["url", "预标签"], item_list[50000:])
+
 
 def main():
     tlp = TextLineLabeled()
     # tlp.split_labeled_files()
     tlp.process()
+    # tlp.generate_labeled()
 
 
 if __name__ == "__main__":
