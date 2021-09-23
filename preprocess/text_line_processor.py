@@ -243,8 +243,8 @@ class TextLineProcessor(object):
             url, label = data_line.split("\t")
             _, img_bgr = download_url_img(url)
             h, w, _ = img_bgr.shape
-            if h * w < 2000:
-                continue
+            # if h * w < 2000:
+            #     continue
             shape_str = str(img_bgr.shape)
             label_str = label_str_dict[str(label)]
             label_count_dict[label_str] += 1
@@ -258,8 +258,8 @@ class TextLineProcessor(object):
 def main():
     tlp = TextLineProcessor()
     # tlp.split_train_and_val()
-    # tlp.show_mini_dataset()
-    tlp.process()
+    # tlp.process()
+    tlp.show_mini_dataset()
 
 
 if __name__ == "__main__":
