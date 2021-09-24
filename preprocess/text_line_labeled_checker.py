@@ -137,7 +137,7 @@ class TextLineLabeledChecker(object):
         big_file = ".".join(self.level1_path.split(".")[:-2]) + ".big.txt"
         print('[Info] small_file: {}'.format(small_file))
         print('[Info] big_file: {}'.format(big_file))
-        pool = Pool(processes=100)
+        pool = Pool(processes=40)
         for data_idx, data_line in enumerate(data_lines):
             # TextLineLabeledChecker.check_big_or_small(data_idx, data_line, small_file, big_file)
             pool.apply_async(TextLineLabeledChecker.check_big_or_small, (data_idx, data_line, small_file, big_file))

@@ -812,6 +812,7 @@ def download_url_img(url):
     from requests.packages.urllib3.exceptions import InsecureRequestWarning
     requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
+    requests.adapters.DEFAULT_RETRIES = 5
     s = requests.session()
     s.keep_alive = False  # 关闭多余连接
 
