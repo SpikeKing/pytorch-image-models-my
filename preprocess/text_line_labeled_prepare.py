@@ -20,7 +20,7 @@ from myutils.crop_img_from_coord import crop_img_from_coord
 from root_dir import DATA_DIR
 
 
-class TextLineLabeled(object):
+class TextLineLabelPrepare(object):
     """
     文本行分类数据集的创建类
     """
@@ -120,18 +120,20 @@ class TextLineLabeled(object):
                 h, w, _ = img_out.shape
                 if h * w < 2000:
                     continue
-                img_url = TextLineLabeled.save_img_path(img_out, img_name)
+                img_url = TextLineLabelPrepare.save_img_path(img_out, img_name)
                 write_line(out_file_path, "{}\t{}".format(img_url, str(label)))
 
         # 处理负例
-        neg_boxes = TextLineLabeled.get_negative_box(img_bgr, coords)
+        neg_boxes = TextLineLabelPrepare.get_negative_box(img_bgr, coords)
         for i, neg_box in enumerate(neg_boxes):
             neg_label = 0  # 负例标签是0
             crop_img = get_cropped_patch(img_bgr, neg_box)
+            crop_img = cv2.resize(crop_img, None, fx=5.0, fy=5.0)  # 有助于提升标注效率
+
             img_name = "{}_s_{}_s_{}.jpg".format(img_name_x, str(i + len(labels)), str(neg_label))
             img_out = crop_img
 
-            img_url = TextLineLabeled.save_img_path(img_out, img_name)
+            img_url = TextLineLabelPrepare.save_img_path(img_out, img_name)
             write_line(out_file_path, "{}\t{}".format(img_url, str(neg_label)))
 
         if data_idx % 1000 == 0:
@@ -140,7 +142,7 @@ class TextLineLabeled(object):
     @staticmethod
     def process_line_try(data_idx, data_line, out_file_path):
         try:
-            TextLineLabeled.process_line(data_idx, data_line, out_file_path)
+            TextLineLabelPrepare.process_line(data_idx, data_line, out_file_path)
         except Exception as e:
             print('[Error] data_idx: {}'.format(data_idx))
             print('[Error] e: {}'.format(e))
@@ -157,7 +159,7 @@ class TextLineLabeled(object):
             # TextLineLabeled.process_line_try(data_idx, data_line, self.out_file_path)
             # if data_idx == 10:
             #     break
-            pool.apply_async(TextLineLabeled.process_line_try, (data_idx, data_line, self.out_file_path))
+            pool.apply_async(TextLineLabelPrepare.process_line_try, (data_idx, data_line, self.out_file_path))
         pool.close()
         pool.join()
         print('[Info] 处理完成: {}'.format(self.out_file_path))
@@ -187,8 +189,7 @@ class TextLineLabeled(object):
     @staticmethod
     def generate_labeled():
         file_path = os.path.join(DATA_DIR, "files", "4wedu+2wopensource+2.5wnature.labeled-10000.1.out.txt")
-        out_file1_path = os.path.join(DATA_DIR, "files", "4wedu+2wopensource+2.5wnature.labeled-10000.1.out1.xlsx")
-        out_file2_path = os.path.join(DATA_DIR, "files", "4wedu+2wopensource+2.5wnature.labeled-10000.1.out2.xlsx")
+        out_file_format = os.path.join(DATA_DIR, "files", "4wedu+2wopensource+2.5wnature.labeled-10000.1.out{}.xlsx")
         print('[Info] 文件名: {}'.format(file_path))
         data_lines = read_file(file_path)
         print('[Info] 文本行数: {}'.format(len(data_lines)))
@@ -200,15 +201,19 @@ class TextLineLabeled(object):
             label_str = label_str_dict[label]
             item_list.append([url, label_str])
 
-        write_list_to_excel(out_file1_path, ["url", "预标签"], item_list[:50000])
-        write_list_to_excel(out_file2_path, ["url", "预标签"], item_list[50000:])
+        k = len(item_list) // 50000
+        for i in range(k+1):
+            s = i * 50000
+            e = min((i+1) * 50000, len(item_list))
+            print('[Info] s: {}, e:{}'.format(s, e))
+            write_list_to_excel(out_file_format.format(i), ["url", "预标签"], item_list[s:e])
 
 
 def main():
-    tlp = TextLineLabeled()
-    # tlp.split_labeled_files()
-    tlp.process()
-    # tlp.generate_labeled()
+    tllp = TextLineLabelPrepare()
+    # tllp.split_labeled_files()
+    # tllp.process()
+    tllp.generate_labeled()
 
 
 if __name__ == "__main__":
