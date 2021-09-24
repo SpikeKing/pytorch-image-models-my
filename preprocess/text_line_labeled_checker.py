@@ -133,8 +133,8 @@ class TextLineLabeledChecker(object):
         print('[Info] 处理文件: {}'.format(self.level1_path))
         data_lines = read_file(self.level1_path)
         print('[Info] 样本数: {}'.format(len(data_lines)))
-        small_file = ".".join(self.level1_path.split(".")[:-2]) + ".small.txt"
-        big_file = ".".join(self.level1_path.split(".")[:-2]) + ".big.txt"
+        small_file = ".".join(self.level1_path.split(".")[:-1]) + ".small.txt"
+        big_file = ".".join(self.level1_path.split(".")[:-1]) + ".big.txt"
         print('[Info] small_file: {}'.format(small_file))
         print('[Info] big_file: {}'.format(big_file))
         pool = Pool(processes=40)
