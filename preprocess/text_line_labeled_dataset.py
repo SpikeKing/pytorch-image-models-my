@@ -25,8 +25,10 @@ class TextLineLabeledDataset(object):
         self.data_dict = {"其他": "0", "印刷公式": "1", "印刷文本": "2", "手写公式": "3", "手写文本": "4", "艺术字": "5"}
 
     @staticmethod
-    def process_line(image_idx, img_url, img_path):
+    def process_line(image_idx, img_url, img_path, is_square=False):
         _, img_bgr = download_url_img(img_url)
+        if is_square:
+            img_bgr = resize_crop_square(img_bgr)
         cv2.imwrite(img_path, img_bgr)
         if image_idx % 1000 == 0:
             print('[Info] data_idx: {}'.format(image_idx))
@@ -35,9 +37,9 @@ class TextLineLabeledDataset(object):
         dataset_folder = os.path.join(DATA_DIR, "datasets")
         mkdir_if_not_exist(dataset_folder)
         # file_path = self.file1_path
-        # dataset_path = os.path.join(dataset_folder, "text_line_v2_small")
+        # dataset_path = os.path.join(dataset_folder, "text_line_v2_square_small")
         file_path = self.file2_path
-        dataset_path = os.path.join(dataset_folder, "text_line_v2_big")
+        dataset_path = os.path.join(dataset_folder, "text_line_v2_square_big")
         mkdir_if_not_exist(dataset_path)
 
         print('[Info] 文件路径: {}'.format(file_path))
@@ -60,7 +62,7 @@ class TextLineLabeledDataset(object):
             label_dir = os.path.join(train_path, label)
             mkdir_if_not_exist(label_dir)
             img_path = os.path.join(label_dir, "{}_{}_{}.jpg".format(ds_type, label, str(data_idx).zfill(7)))
-            pool.apply_async(TextLineLabeledDataset.process_line, (data_idx, img_url, img_path))
+            pool.apply_async(TextLineLabeledDataset.process_line, (data_idx, img_url, img_path, True))
             # TextLineLabeledDataset.process_line(data_idx, img_url, img_path)
             # if data_idx == 10:
             #     break
@@ -73,7 +75,7 @@ class TextLineLabeledDataset(object):
             label_dir = os.path.join(val_path, label)
             mkdir_if_not_exist(label_dir)
             img_path = os.path.join(label_dir, "{}_{}_{}.jpg".format(ds_type, label, str(data_idx).zfill(7)))
-            pool.apply_async(TextLineLabeledDataset.process_line, (data_idx, img_url, img_path))
+            pool.apply_async(TextLineLabeledDataset.process_line, (data_idx, img_url, img_path, True))
             # TextLineLabeledDataset.process_line(data_idx, img_url, img_path)
             # if data_idx == 10:
             #     break
