@@ -655,7 +655,7 @@ def rotate_img_with_bound(img_np, angle, border_value=(0, 0, 0)):
     return img_rotated, M
 
 
-def resize_img_fixed(img, x, is_height=True):
+def resize_side_fixed(img, x, is_height=True):
     """
     resize图像，根据某一个边的长度
     """
@@ -671,6 +671,21 @@ def resize_img_fixed(img, x, is_height=True):
 
     img_r = cv2.resize(img, (nw, nh), interpolation=cv2.INTER_AREA)
     return img_r
+
+
+def resize_max_fixed(img_bgr, size=1024):
+    """
+    根据最大边resize
+    """
+    h, w, _ = img_bgr.shape
+    if h >= w:
+        w = int(w * size / h)
+        h = size
+    else:
+        h = int(h * size / w)
+        w = size
+    img_bgr = cv2.resize(img_bgr, (w, h))
+    return img_bgr
 
 
 def random_crop(img, height, width, sh=0, sw=0):

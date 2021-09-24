@@ -29,6 +29,7 @@ class TextLineLabeledDataset(object):
         _, img_bgr = download_url_img(img_url)
         if is_square:
             img_bgr = resize_crop_square(img_bgr)
+        img_bgr = resize_max_fixed(img_bgr, 512)
         cv2.imwrite(img_path, img_bgr)
         if image_idx % 1000 == 0:
             print('[Info] data_idx: {}'.format(image_idx))
@@ -37,9 +38,9 @@ class TextLineLabeledDataset(object):
         dataset_folder = os.path.join(DATA_DIR, "datasets")
         mkdir_if_not_exist(dataset_folder)
         # file_path = self.file1_path
-        # dataset_path = os.path.join(dataset_folder, "text_line_v2_square_small")
+        # dataset_path = os.path.join(dataset_folder, "text_line_v2_square512_small")
         file_path = self.file2_path
-        dataset_path = os.path.join(dataset_folder, "text_line_v2_square_big")
+        dataset_path = os.path.join(dataset_folder, "text_line_v2_square512_big")
         mkdir_if_not_exist(dataset_path)
 
         print('[Info] 文件路径: {}'.format(file_path))
