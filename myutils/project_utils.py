@@ -812,8 +812,11 @@ def download_url_img(url):
     from requests.packages.urllib3.exceptions import InsecureRequestWarning
     requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
+    s = requests.session()
+    s.keep_alive = False  # 关闭多余连接
+
     try:
-        response = requests.get(url, timeout=3, verify=False)
+        response = s.get(url, timeout=3, verify=False)
     except Exception as e:
         print(str(e))
         return False, []
@@ -822,6 +825,7 @@ def download_url_img(url):
         np_arr = np.asarray(bytearray(input_image_data), np.uint8).reshape(1, -1)
         parsed_image = cv2.imdecode(np_arr, cv2.IMREAD_UNCHANGED)
         return True, parsed_image
+
 
 
 def download_url_txt(url, is_split=False):
