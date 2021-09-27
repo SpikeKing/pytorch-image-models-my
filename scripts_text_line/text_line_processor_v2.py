@@ -121,7 +121,7 @@ class TextLineProcessorV2(object):
                 crop_img = crop_img_from_coord(coord, img_bgr)
                 crop_img_name = "{}_{}_{}_{}.jpg".format(data_type, str(data_idx).zfill(7), str(i), str(label))
                 h, w, _ = crop_img.shape
-                if h * w < 200 * 200:
+                if h * w < 100 * 100:
                     continue
                 crop_img_url = TextLineProcessorV2.save_img_path(crop_img, crop_img_name)
                 out_dict = {
