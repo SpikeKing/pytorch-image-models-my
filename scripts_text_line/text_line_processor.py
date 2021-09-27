@@ -231,9 +231,9 @@ class TextLineProcessor(object):
         out_html_path = os.path.join(DATA_DIR, "files", "4wedu+2wopensource+2.5wnature.labeled-10000.html")
         print('[Info] 文件: {}'.format(file_path))
         data_lines = read_file(file_path)
-        random.seed(47)
+        random.seed(48)
         random.shuffle(data_lines)
-        data_lines = data_lines[:2000]
+        data_lines = data_lines[:1000]
         print('[Info] 样本数: {}'.format(len(data_lines)))
         label_str_dict = {"0": "其他", "1": "印刷公式", "2": "印刷文本", "3": "手写公式", "4": "手写文本", "5": "艺术字"}
         label_count_dict = collections.defaultdict(int)
@@ -243,7 +243,7 @@ class TextLineProcessor(object):
             url, label = data_line.split("\t")
             _, img_bgr = download_url_img(url)
             h, w, _ = img_bgr.shape
-            if h * w < 3000:
+            if h * w < 500 * 500:
                 continue
             shape_str = str(img_bgr.shape)
             label_str = label_str_dict[str(label)]
