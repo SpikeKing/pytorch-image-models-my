@@ -227,28 +227,30 @@ class TextLineProcessor(object):
         """
         生成mini数据集，包含没有resize的数据
         """
-        file_path = os.path.join(DATA_DIR, "files", "text_line_dataset_v1_1_mini.txt")
-        out_html_path = os.path.join(DATA_DIR, "files", "text_line_dataset_v1_1_mini.html")
+        file_path = os.path.join(DATA_DIR, "files", "4wedu+2wopensource+2.5wnature.labeled-10000.1.out.txt")
+        out_html_path = os.path.join(DATA_DIR, "files", "4wedu+2wopensource+2.5wnature.labeled-10000.html")
         print('[Info] 文件: {}'.format(file_path))
         data_lines = read_file(file_path)
         random.seed(47)
         random.shuffle(data_lines)
-        data_lines = data_lines[:200]
+        data_lines = data_lines[:2000]
         print('[Info] 样本数: {}'.format(len(data_lines)))
         label_str_dict = {"0": "其他", "1": "印刷公式", "2": "印刷文本", "3": "手写公式", "4": "手写文本", "5": "艺术字"}
         label_count_dict = collections.defaultdict(int)
 
         item_list = []
-        for data_line in data_lines:
+        for data_idx, data_line in enumerate(data_lines):
             url, label = data_line.split("\t")
             _, img_bgr = download_url_img(url)
             h, w, _ = img_bgr.shape
-            # if h * w < 2000:
-            #     continue
+            if h * w < 3000:
+                continue
             shape_str = str(img_bgr.shape)
             label_str = label_str_dict[str(label)]
             label_count_dict[label_str] += 1
             item_list.append([url, label_str, shape_str])
+            if data_idx % 10 == 0:
+                print("[Info] data_idx: {}".format(data_idx))
 
         TextLineProcessor.show_num_dict(label_count_dict)
         make_html_page(out_html_path, item_list)
@@ -259,7 +261,8 @@ def main():
     tlp = TextLineProcessor()
     # tlp.split_train_and_val()
     # tlp.process()
-    tlp.split_labeled_files()
+    # tlp.split_labeled_files()
+    tlp.show_mini_dataset()
 
 
 if __name__ == "__main__":
