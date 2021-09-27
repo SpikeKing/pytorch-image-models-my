@@ -200,20 +200,20 @@ class TextLineProcessorV2(object):
         print('[Info] 处理完成!')
 
     def parse_raw_file(self):
-        print('[Info] 处理文件: {}'.format(self.raw_nat_file))
-        # print('[Info] 处理文件: {}'.format(self.raw_doc_file))
-        nat_type = "nat"
-        # doc_type = "doc"
-        nat_data_lines = read_file(self.raw_nat_file)
-        print('[Info] nat样本数: {}'.format(len(nat_data_lines)))
-        # doc_data_lines = read_file(self.raw_doc_file)
-        # print('[Info] doc样本数: {}'.format(len(doc_data_lines)))
+        # print('[Info] 处理文件: {}'.format(self.raw_nat_file))
+        print('[Info] 处理文件: {}'.format(self.raw_doc_file))
+        # nat_type = "nat"
+        doc_type = "doc"
+        # nat_data_lines = read_file(self.raw_nat_file)
+        # print('[Info] nat样本数: {}'.format(len(nat_data_lines)))
+        doc_data_lines = read_file(self.raw_doc_file)
+        print('[Info] doc样本数: {}'.format(len(doc_data_lines)))
 
         pool = Pool(processes=40)
-        for data_idx, data_line in enumerate(nat_data_lines):
-            pool.apply_async(TextLineProcessorV2.process_line_try, (data_idx, "nat", data_line, self.nat_dataset_file))
-        # for data_idx, data_line in enumerate(doc_data_lines):
-        #     pool.apply_async(TextLineProcessorV2.process_line_try, (data_idx, "doc", data_line, self.doc_dataset_file))
+        # for data_idx, data_line in enumerate(nat_data_lines):
+            # pool.apply_async(TextLineProcessorV2.process_line_try, (data_idx, "nat", data_line, self.nat_dataset_file))
+        for data_idx, data_line in enumerate(doc_data_lines):
+            pool.apply_async(TextLineProcessorV2.process_line_try, (data_idx, "doc", data_line, self.doc_dataset_file))
         pool.close()
         pool.join()
         print('[Info] 处理完成: {}'.format(self.nat_dataset_file))
