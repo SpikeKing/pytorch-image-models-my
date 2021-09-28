@@ -2,7 +2,7 @@
 # -- coding: utf-8 --
 """
 Copyright (c) 2021. All rights reserved.
-Created by C. L. Wang on 16.9.21
+Created by C. L. Wang on 27.9.21
 """
 
 import os
@@ -14,49 +14,41 @@ p = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if p not in sys.path:
     sys.path.append(p)
 
-from myutils.make_html_page import make_html_page
 from myutils.project_utils import *
 from myutils.cv_utils import *
 from myutils.crop_img_from_coord import crop_img_from_coord
+from myutils.make_html_page import make_html_page
 from root_dir import DATA_DIR
 
 
 class TextLineProcessor(object):
     """
-    文本行分类数据集的创建类
+    解析原始数据
+    1. 拆分文档和自然场景
+    2. 提取框并且上传图像，过滤小于200 * 200的图像
+    3. 创建可以直接访问图像的数据集
+    4. 验证数据集效果
     """
+
     def __init__(self):
-        # v1
-        # self.file_path = os.path.join(DATA_DIR, "files", "common_full.txt")  # 文件
-        # self.out_file_path = os.path.join(DATA_DIR, "files",
-        #                                   "common_full_out.{}.txt".format(get_current_time_str()))  # 输出文件
-        # self.mini_file_path = os.path.join(DATA_DIR, "files", "common_full_mini.txt")  # 输出文件
-
-        # v2
-        self.file_path = os.path.join(DATA_DIR, "files", "4wedu+2wopensource+2.5wnature.labeled-10000.1.txt")
-        self.train_file_path = os.path.join(DATA_DIR, "files", "text_line_dataset_v1_1_raw.train.txt")
-        self.val_file_path = os.path.join(DATA_DIR, "files", "text_line_dataset_v1_1_raw.val.txt")
-
-        # 输出文件
-        self.out_train_file_path = \
-            os.path.join(DATA_DIR, "files", "text_line_dataset_v1_1.train.{}.txt".format(get_current_time_str()))
-        self.out_val_file_path = \
-            os.path.join(DATA_DIR, "files", "text_line_dataset_v1_1.val.{}.txt".format(get_current_time_str()))
-
-        self.mini_file_path = os.path.join(DATA_DIR, "files", "text_line_dataset_v1_1_mini.txt")  # 输出文件
+        folder_path = os.path.join(DATA_DIR, "files_v2")
+        self.raw_file = os.path.join(folder_path, "4wedu+2wopensource+2.5wnature.txt")
+        self.cat_file = os.path.join(folder_path, "文字检测_识别文字检测数据清洗_.txt")
+        self.raw_nat_file = os.path.join(folder_path, "text_line_raw_nat.txt")
+        self.raw_doc_file = os.path.join(folder_path, "text_line_raw_doc.txt")
+        self.nat_dataset_file = os.path.join(folder_path, "text_line_nat_dataset.min100x100.txt")
+        self.doc_dataset_file = os.path.join(folder_path, "text_line_doc_dataset.min100x100.txt")
+        self.nat_html_file = os.path.join(folder_path, "text_line_nat_dataset.min100x100.html")
+        self.doc_html_file = os.path.join(folder_path, "text_line_doc_dataset.min100x100.html")
 
     @staticmethod
-    def save_img_path(img_bgr, img_name, oss_root_dir="", is_square=False):
+    def save_img_path(img_bgr, img_name, oss_root_dir=""):
         """
         上传图像
         """
         from x_utils.oss_utils import save_img_2_oss
         if not oss_root_dir:
-            if is_square:
-                oss_root_dir = "zhengsheng.wcl/Text-Line-Clz/datasets/v1_1_square/{}".format(get_current_day_str())
-            else:
-                oss_root_dir = "zhengsheng.wcl/Text-Line-Clz/datasets/v1_1/{}".format(get_current_day_str())
-
+            oss_root_dir = "zhengsheng.wcl/Text-Line-Clz/datasets/v2/{}".format(get_current_day_str())
         img_url = save_img_2_oss(img_bgr, img_name, oss_root_dir)
         return img_url
 
@@ -90,6 +82,8 @@ class TextLineProcessor(object):
         new_n = len(avg_x_list)
         avg_x = int(np.average(avg_x_list))
         avg_y = int(np.average(avg_y_list))
+        if avg_x * avg_y < 200 * 200:
+            return []
 
         # 随机剪裁
         x_step = avg_x
@@ -116,102 +110,121 @@ class TextLineProcessor(object):
         return box_list
 
     @staticmethod
-    def process_line(data_idx, data_line, out_file_path, is_square=True):
+    def process_line(data_idx, data_type, data_line, out_file_path):
+        """
+        处理文本行
+        """
         data = eval(data_line.strip())
         url = data["url"]
         labels = data['label']
         coords = data['coord']
-        img_name_x = url.split("/")[-1].split(".")[0]  # 图像名称
         _, img_bgr = download_url_img(url)
 
-        # 处理标签
+        # 处理正例
         for i in range(len(labels)):
             label = labels[i]
             if label in [1, 2, 3, 4, 5]:
                 coord = np.array(coords[i])
                 crop_img = crop_img_from_coord(coord, img_bgr)
-                if is_square:
-                    img_name = "{}_s_{}_s_{}_square.jpg".format(img_name_x, str(i), str(label))
-                    img_out = resize_crop_square(crop_img)
-                else:
-                    img_name = "{}_s_{}_s_{}.jpg".format(img_name_x, str(i), str(label))
-                    img_out = crop_img
-                h, w, _ = img_out.shape
-                if min(h, w) < 20:
+                crop_img_name = "{}_{}_{}_{}.jpg".format(data_type, str(data_idx).zfill(7), str(i), str(label))
+                h, w, _ = crop_img.shape
+                if h * w < 100 * 100:
                     continue
-                img_url = TextLineProcessor.save_img_path(img_out, img_name, is_square=is_square)
-                write_line(out_file_path, "{}\t{}".format(img_url, str(label)))
+                crop_img_url = TextLineProcessor.save_img_path(crop_img, crop_img_name)
+                out_dict = {
+                    "ori_img_url": url,
+                    "coord_idx": i,
+                    "crop_img_url": crop_img_url,
+                    "label": label
+                }
+                write_line(out_file_path, json.dumps(out_dict))
 
         # 处理负例
         neg_boxes = TextLineProcessor.get_negative_box(img_bgr, coords)
         for i, neg_box in enumerate(neg_boxes):
             neg_label = 0  # 负例标签是0
             crop_img = get_cropped_patch(img_bgr, neg_box)
-            if is_square:
-                img_name = "{}_s_{}_s_{}_square.jpg".format(img_name_x, str(i + len(labels)), str(neg_label))
-                img_out = resize_crop_square(crop_img)
-            else:
-                img_name = "{}_s_{}_s_{}.jpg".format(img_name_x, str(i + len(labels)), str(neg_label))
-                img_out = crop_img
-
-            img_url = TextLineProcessor.save_img_path(img_out, img_name, is_square=is_square)
-            write_line(out_file_path, "{}\t{}".format(img_url, str(neg_label)))
+            crop_img_name = "{}_{}_{}_{}.jpg".format(data_type, str(data_idx).zfill(7), str(i + len(labels)), str(neg_label))
+            crop_img_url = TextLineProcessor.save_img_path(crop_img, crop_img_name)
+            out_dict = {
+                "ori_img_url": url,
+                "coord_idx": -1,
+                "crop_img_url": crop_img_url,
+                "label": neg_label
+            }
+            write_line(out_file_path, json.dumps(out_dict))
 
         if data_idx % 1000 == 0:
             print('[Info] 处理完成: {}'.format(data_idx))
 
     @staticmethod
-    def process_line_try(data_idx, data_line, out_file_path, is_square):
+    def process_line_try(data_idx, data_type, data_line, out_file_path):
         try:
-            TextLineProcessor.process_line(data_idx, data_line, out_file_path, is_square)
+            TextLineProcessor.process_line(data_idx, data_type, data_line, out_file_path)
         except Exception as e:
             print('[Error] data_idx: {}'.format(data_idx))
             print('[Error] e: {}'.format(e))
 
-    def split_train_and_val(self):
+    def split_cat_files(self):
         """
-        将样本拆分为训练数据和验证数据
+        拆分类别文档
         """
-        print('[Info] 处理文件: {}'.format(self.file_path))
-        data_lines = read_file(self.file_path)
-        print('[Info] 样本数: {}'.format(len(data_lines)))
-        random.seed(47)
-        random.shuffle(data_lines)
-        n_split = len(data_lines) // 20 * 19
-        train_data_lines = data_lines[:n_split]
-        val_data_lines = data_lines[n_split:]
-        print('[Info] 训练数据: {}, 验证数据: {}'.format(len(train_data_lines), len(val_data_lines)))
-        if not os.path.exists(self.train_file_path):
-            write_list_to_file(self.train_file_path, train_data_lines)
-            write_list_to_file(self.val_file_path, val_data_lines)
-            print('[Info] 写入完成: {}'.format(self.train_file_path))
-            print('[Info] 写入完成: {}'.format(self.val_file_path))
-        else:
-            print('[Info] 已完成: {}'.format(self.train_file_path))
-            print('[Info] 已完成: {}'.format(self.val_file_path))
+        print("[Info] 原始文件: {}".format(self.raw_file))
+        print("[Info] 类别文件: {}".format(self.cat_file))
+        raw_data_lines = read_file(self.raw_file)
+        print("[Info] 样本数: {}".format(len(raw_data_lines)))
+        cat_data_lines = read_file(self.cat_file)
+        print("[Info] 样本数: {}".format(len(cat_data_lines)))
 
-    def process(self):
-        print('[Info] 处理文件: {}'.format(self.train_file_path))
-        print('[Info] 处理文件: {}'.format(self.val_file_path))
-        train_data_lines = read_file(self.train_file_path)
-        val_data_lines = read_file(self.val_file_path)
-        print('[Info] 样本数: {}'.format(len(train_data_lines)))
-        print('[Info] 样本数: {}'.format(len(val_data_lines)))
-        random.seed(47)
-        random.shuffle(train_data_lines)
-        random.shuffle(val_data_lines)
+        raw_dict = dict()
+        for data_idx, raw_data in enumerate(raw_data_lines):
+            data_dict = eval(raw_data)
+            url = data_dict["url"]
+            raw_dict[url] = raw_data
+            if data_idx % 10000 == 0:
+                print('[Info] \tdata_idx: {}'.format(data_idx))
+        print('[Info] 原始样本数: {}'.format(len(raw_dict.keys())))
 
-        pool = Pool(processes=100)
-        for data_idx, data_line in enumerate(train_data_lines):
-            # TextLineProcessor.process_line_try(data_idx, data_line, self.out_train_file_path, is_square=False)
-            pool.apply_async(TextLineProcessor.process_line_try, (data_idx, data_line, self.out_train_file_path, False))
-        for data_idx, data_line in enumerate(val_data_lines):
-            # TextLineProcessor.process_line_try(data_idx, data_line, self.out_val_file_path)
-            pool.apply_async(TextLineProcessor.process_line_try, (data_idx, data_line, self.out_val_file_path, False))
+        nat_list = []
+        doc_list = []
+        for data_idx, cat_data in enumerate(cat_data_lines):
+            data_dict = json.loads(cat_data)
+            url = data_dict["url"]
+            label = data_dict["cate"]
+            if url in raw_dict.keys():
+                if label == "自然":
+                    raw_line = raw_dict[url]
+                    nat_list.append(raw_line)
+                elif label == "文档":
+                    raw_line = raw_dict[url]
+                    doc_list.append(raw_line)
+            if data_idx % 10000 == 0:
+                print('[Info] \tdata_idx: {}'.format(data_idx))
+        print('[Info] 原始样本数: {}'.format(len(raw_dict.keys())))
+
+        write_list_to_file(self.raw_nat_file, nat_list)
+        write_list_to_file(self.raw_doc_file, doc_list)
+        print('[Info] 处理完成!')
+
+    def parse_raw_file(self):
+        print('[Info] 处理文件: {}'.format(self.raw_nat_file))
+        print('[Info] 处理文件: {}'.format(self.raw_doc_file))
+        nat_type = "nat"
+        doc_type = "doc"
+        nat_data_lines = read_file(self.raw_nat_file)
+        print('[Info] nat样本数: {}'.format(len(nat_data_lines)))
+        doc_data_lines = read_file(self.raw_doc_file)
+        print('[Info] doc样本数: {}'.format(len(doc_data_lines)))
+
+        pool = Pool(processes=40)
+        for data_idx, data_line in enumerate(nat_data_lines):
+            pool.apply_async(TextLineProcessor.process_line_try, (data_idx, "nat", data_line, self.nat_dataset_file))
+        for data_idx, data_line in enumerate(doc_data_lines):
+            pool.apply_async(TextLineProcessor.process_line_try, (data_idx, "doc", data_line, self.doc_dataset_file))
         pool.close()
         pool.join()
-        print('[Info] 处理完成: {}'.format(self.out_train_file_path))
-        print('[Info] 处理完成: {}'.format(self.out_val_file_path))
+        print('[Info] 处理完成: {}'.format(self.nat_dataset_file))
+        print('[Info] 处理完成: {}'.format(self.doc_dataset_file))
 
     @staticmethod
     def show_num_dict(num_dict):
@@ -222,48 +235,45 @@ class TextLineProcessor(object):
         for label, num in items:
             print('[Info] \t l: {}, n: {}, p: {}%'.format(label, num, round(safe_div(num, all_num) * 100, 2)))
 
-    @staticmethod
-    def show_mini_dataset():
-        """
-        生成mini数据集，包含没有resize的数据
-        """
-        file_path = os.path.join(DATA_DIR, "files", "4wedu+2wopensource+2.5wnature.labeled-10000.1.out.txt")
-        out_html_path = os.path.join(DATA_DIR, "files", "4wedu+2wopensource+2.5wnature.labeled-10000.html")
-        print('[Info] 文件: {}'.format(file_path))
-        data_lines = read_file(file_path)
-        random.seed(48)
+    def show_dataset(self):
+        dataset_file = self.nat_dataset_file
+        html_file = self.nat_html_file
+        print('[Info] dataset 文件: {}'.format(dataset_file))
+        print('[Info] html 文件: {}'.format(html_file))
+
+        data_lines = read_file(dataset_file)
+        random.seed(47)
         random.shuffle(data_lines)
-        data_lines = data_lines[:1000]
+        data_lines = data_lines[:200]
         print('[Info] 样本数: {}'.format(len(data_lines)))
         label_str_dict = {"0": "其他", "1": "印刷公式", "2": "印刷文本", "3": "手写公式", "4": "手写文本", "5": "艺术字"}
         label_count_dict = collections.defaultdict(int)
 
         item_list = []
         for data_idx, data_line in enumerate(data_lines):
-            url, label = data_line.split("\t")
-            _, img_bgr = download_url_img(url)
+            data_dict = json.loads(data_line)
+            img_url = data_dict["crop_img_url"]
+            img_label = data_dict["label"]
+            _, img_bgr = download_url_img(img_url)
             h, w, _ = img_bgr.shape
-            if h * w < 500 * 500:
-                continue
             shape_str = str(img_bgr.shape)
-            label_str = label_str_dict[str(label)]
+            label_str = label_str_dict[str(img_label)]
             label_count_dict[label_str] += 1
-            item_list.append([url, label_str, shape_str])
+            item_list.append([img_url, label_str, shape_str])
             if data_idx % 10 == 0:
                 print("[Info] data_idx: {}".format(data_idx))
 
         TextLineProcessor.show_num_dict(label_count_dict)
-        make_html_page(out_html_path, item_list)
-        print('[Info] 写入完成: {}'.format(out_html_path))
+        make_html_page(html_file, item_list)
+        print('[Info] 写入完成: {}'.format(html_file))
 
 
 def main():
-    tlp = TextLineProcessor()
-    # tlp.split_train_and_val()
-    # tlp.process()
-    # tlp.split_labeled_files()
-    tlp.show_mini_dataset()
+    tlp2 = TextLineProcessor()
+    # tlp2.split_cat_files()  # 拆分自然场景和文档
+    # tlp2.parse_raw_file()  # 处理原始文件，上传图像
+    tlp2.show_dataset()  # 处理原始文件，上传图像
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
