@@ -91,7 +91,7 @@ class DatasetCleaner(object):
         pool.join()
 
         error_lines = read_file(self.error_path)
-        print('[Info] 正确率: {}'.format(safe_div(len(error_lines), n)))
+        print('[Info] 正确率: {}'.format(safe_div(len(error_lines), len(data_lines))))
         items = []
         for line in error_lines:
             img_url, pre_label, label, data_line = line.split("\t")
