@@ -26,9 +26,13 @@ class DatasetCleaner(object):
     数据集清理
     """
     def __init__(self):
+        # 数据集
         self.dataset_folder = os.path.join(DATA_DIR, "datasets", "document_dataset")
+        # 数据集路径，避免重复读取
         self.dataset_folder_path = os.path.join(DATA_DIR, "files_v2", "document_dataset_path.txt")
+        # 错误样本
         self.error_path = os.path.join(DATA_DIR, "files_v2", "document_dataset_error.{}.txt".format(get_current_time_str()))
+        # 错误样本展示
         self.error_html_path = os.path.join(DATA_DIR, "files_v2", "document_dataset_error.html")
 
     @staticmethod
