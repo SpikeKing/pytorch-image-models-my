@@ -71,6 +71,7 @@ class DatasetCleaner(object):
         print('[Info] 处理完成: {}'.format(data_idx))
 
     def process(self):
+        print('[Info] 读取文件: {}'.format(self.dataset_folder_path))
         data_lines = read_file(self.dataset_folder_path)
         n = len(data_lines)
         if n == 0:  # 加载文件
@@ -90,6 +91,7 @@ class DatasetCleaner(object):
         pool.join()
 
         error_lines = read_file(self.error_path)
+        print('[Info] 正确率: {}'.format(safe_div(len(error_lines), n)))
         items = []
         for line in error_lines:
             img_url, pre_label, label, data_line = line.split("\t")
