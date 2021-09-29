@@ -20,6 +20,9 @@ from root_dir import DATA_DIR
 
 
 class DatasetGenerator(object):
+    """
+    通用的数据生成逻辑
+    """
     def __init__(self):
         self.dataset_path = os.path.join(DATA_DIR, "datasets", "ch_en_line_v1")
         self.train_file = os.path.join(DATA_DIR, 'files_ch_en', "line_cls_train.txt")
