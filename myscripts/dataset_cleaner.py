@@ -26,40 +26,47 @@ class DatasetCleaner(object):
     数据集清理
     """
     def __init__(self):
+        dataset_name = "document_dataset"
         # 数据集
-        self.dataset_folder = os.path.join(DATA_DIR, "datasets", "document_dataset")
+        self.dataset_folder = os.path.join(DATA_DIR, "datasets", dataset_name)
         # 数据集路径，避免重复读取
-        self.dataset_folder_path = os.path.join(DATA_DIR, "files_v2", "document_dataset_path.txt")
+        self.dataset_folder_path = os.path.join(DATA_DIR, "files_v2", "{}_path.txt".format(dataset_name))
         # 错误样本
-        self.error_path = os.path.join(DATA_DIR, "files_v2", "document_dataset_error.{}.txt".format(get_current_time_str()))
+        self.error_path = os.path.join(
+            DATA_DIR, "files_v2", "{}_error.{}.txt".format(dataset_name, get_current_time_str()))
         # 错误样本展示
-        self.error_html_path = os.path.join(DATA_DIR, "files_v2", "document_dataset_error.html")
+        self.error_html_path = \
+            os.path.join(DATA_DIR, "files_v2", "{}_error.html".format(dataset_name))
+        # 测试服务名称
+        self.service_name = "7VKS8amEShUQmmFWrhKWee"
+        # 测试工程，数据存储位置
+        self.saved_project = "Doc-Clz"
 
     @staticmethod
-    def call_service(img_bgr):
+    def call_service(img_bgr, service_name):
         """
         调用服务
         """
-        data_dict = get_vpf_service_np(img_bgr, service_name="7VKS8amEShUQmmFWrhKWee")
+        data_dict = get_vpf_service_np(img_bgr, service_name=service_name)
         label = data_dict["data"]["label"]
         prob_list = data_dict["data"]["prob_list"]
         return label, prob_list
 
     @staticmethod
-    def save_img_path(img_bgr, img_name, oss_root_dir=""):
+    def save_img_path(img_bgr, img_name, saved_project, oss_root_dir=""):
         """
         上传图像
         """
         from x_utils.oss_utils import save_img_2_oss
         if not oss_root_dir:
-            oss_root_dir = "zhengsheng.wcl/Doc-Clz/datasets/error/{}".format(get_current_day_str())
+            oss_root_dir = "zhengsheng.wcl/{}/datasets/error/{}".format(saved_project, get_current_day_str())
         img_url = save_img_2_oss(img_bgr, img_name, oss_root_dir)
         return img_url
 
     @staticmethod
-    def process_line(data_idx, data_line, error_path):
+    def process_line(data_idx, data_line, error_path, service_name, saved_project):
         img_bgr = cv2.imread(data_line)
-        label_str, prob_list = DatasetCleaner.call_service(img_bgr)
+        label_str, prob_list = DatasetCleaner.call_service(img_bgr, service_name)
         pre_label_str = data_line.split("/")[-2]
         label = int(label_str)
         pre_label = int(pre_label_str)
@@ -70,7 +77,7 @@ class DatasetCleaner(object):
             pre_label = label_dict[pre_label]
             label = label_dict[label]
             img_name = "{}-{}.jpg".format(data_idx, get_current_time_str())
-            img_url = DatasetCleaner.save_img_path(img_bgr, img_name)
+            img_url = DatasetCleaner.save_img_path(img_bgr, img_name, saved_project)
             write_line(error_path, "{}\t{}\t{}\t{}".format(img_url, pre_label, label, data_line))
         print('[Info] 处理完成: {}'.format(data_idx))
 
@@ -89,8 +96,9 @@ class DatasetCleaner(object):
 
         pool = Pool(processes=100)
         for data_idx, data_line in enumerate(data_lines):
-            # DatasetCleaner.process_line(data_idx, data_line, self.error_path)
-            pool.apply_async(DatasetCleaner.process_line, (data_idx, data_line, self.error_path))
+            # DatasetCleaner.process_line(data_idx, data_line, self.error_path, self.service_name, saved_project)
+            pool.apply_async(DatasetCleaner.process_line,
+                             (data_idx, data_line, self.error_path, self.service_name, self.saved_project))
         pool.close()
         pool.join()
 
@@ -106,7 +114,7 @@ class DatasetCleaner(object):
 
 
 def main():
-    dc = DatasetCleaner()
+    dc = DatasetCleaner()  # 修改init文件参数
     dc.process()
 
 
