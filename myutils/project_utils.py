@@ -306,7 +306,8 @@ def safe_div(x, y):
     y = float(y)
     if y == 0.0:
         return 0.0
-    return x / y
+    r = x / y
+    return r
 
 
 def calculate_percent(x, y):
