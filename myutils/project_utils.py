@@ -808,17 +808,13 @@ def download_url_img(url):
     """
     下载url图像
     """
+    import time
     import cv2
     import requests
-    from requests.packages.urllib3.exceptions import InsecureRequestWarning
-    requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
-
-    requests.adapters.DEFAULT_RETRIES = 5
-    s = requests.session()
-    s.keep_alive = False  # 关闭多余连接
 
     try:
-        response = s.get(url, timeout=3, verify=False)
+        response = requests.get(url, verify=False)
+        time.sleep(3)
     except Exception as e:
         print(str(e))
         return False, []
@@ -827,7 +823,6 @@ def download_url_img(url):
         np_arr = np.asarray(bytearray(input_image_data), np.uint8).reshape(1, -1)
         parsed_image = cv2.imdecode(np_arr, cv2.IMREAD_UNCHANGED)
         return True, parsed_image
-
 
 
 def download_url_txt(url, is_split=False):
