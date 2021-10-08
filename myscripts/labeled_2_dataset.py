@@ -13,6 +13,7 @@ p = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if p not in sys.path:
     sys.path.append(p)
 
+
 from myutils.make_html_page import make_html_page
 from myutils.project_utils import *
 from myutils.cv_utils import *
@@ -182,17 +183,96 @@ class Labeled2Dataset(object):
         print('[Info] 处理文件: {}'.format(file1_name))
         print('[Info] 处理文件: {}'.format(file2_name))
         print('[Info] 处理文件: {}'.format(file3_name))
-        right1_dict = Labeled2Dataset.load_data_file([file1_name, file2_name])
-        right2_dict = Labeled2Dataset.load_data_file([file3_name])
+        right1_dict = Labeled2Dataset.load_data_file([file1_name, file2_name], label_dict)
+        right2_dict = Labeled2Dataset.load_data_file([file3_name], label_dict)
 
         right_dict = Labeled2Dataset.merge_data_dict(right1_dict, right2_dict)
 
         Labeled2Dataset.save_data(right_dict, label_format_name, html_name)
 
+    @staticmethod
+    def process_v3():
+        file_path = os.path.join(DATA_DIR, "files_text_line", "text_line_doc_dataset.min100x100.txt")
+        out1_path = os.path.join(DATA_DIR, "files_text_line", "text_line_doc_印刷文字.txt")
+        out2_path = os.path.join(DATA_DIR, "files_text_line", "text_line_doc_手写文字.txt")
+        label_str_dict = {"0": "其他", "1": "印刷公式", "2": "印刷文本", "3": "手写公式", "4": "手写文本", "5": "艺术字"}
+        data_lines = read_file(file_path)
+        print('[Info] 文件数: {}'.format(len(data_lines)))
+        out1_list, out2_list = [], []
+        for data_line in data_lines:
+            data_dict = json.loads(data_line)
+            crop_img_url = data_dict["crop_img_url"]
+            # _, img_bgr = download_url_img(crop_img_url)
+            # h, w, _ = img_bgr.shape
+            # area = h * w
+            # print("area: {}, url: {}".format(area, crop_img_url))
+            label = data_dict["label"]
+            if label == 1 or label == 2:
+                out1_list.append(crop_img_url)
+            elif label == 3 or label == 4:
+                out2_list.append(crop_img_url)
+        create_file(out1_path)
+        write_list_to_file(out1_path, out1_list)
+        create_file(out2_path)
+        write_list_to_file(out2_path, out2_list)
+
+    @staticmethod
+    def process_dataset(data_line, label_dir, label_idx, data_idx):
+        _, img_bgr = download_url_img(data_line, is_mul=True)
+        file_path = os.path.join(label_dir, "{}_{}.jpg".format(str(label_idx).zfill(3), str(data_idx).zfill(7)))
+        cv2.imwrite(file_path, img_bgr)
+        if data_idx % 1000 == 0:
+            print("[Info] \t data_idx: {}".format(data_idx))
+
+    @staticmethod
+    def make_dataset():
+        folder_path = os.path.join(DATA_DIR, "files_text_line")
+        file1_path = os.path.join(folder_path, "text_line_doc_印刷文字.txt")
+        file2_path = os.path.join(folder_path, "text_line_doc_手写文字.txt")
+        file3_path = os.path.join(folder_path, "text_line_4c_印刷文字.20211008.txt")
+        file4_path = os.path.join(folder_path, "text_line_4c_手写文字.20211008.txt")
+        file5_path = os.path.join(folder_path, "text_line_4c_艺术字.20211008.txt")
+        file6_path = os.path.join(folder_path, "text_line_4c_无文字.20211008.txt")
+
+        data1_lines = read_file(file1_path)
+        data1_lines = get_fixed_samples(data1_lines, 100000)
+
+        data2_lines = read_file(file2_path)
+        data2_lines = get_fixed_samples(data2_lines, 50000)
+
+        data3_lines = read_file(file3_path)
+        data3_lines = get_fixed_samples(data3_lines, 30000)
+
+        data4_lines = read_file(file4_path)
+        data4_lines = get_fixed_samples(data4_lines, 5000)
+
+        data5_lines = read_file(file5_path)
+        data5_lines = get_fixed_samples(data5_lines, 50000)
+
+        data6_lines = read_file(file6_path)
+        data6_lines = get_fixed_samples(data6_lines, 5000)
+
+        data_list = [data1_lines, data2_lines, data3_lines, data4_lines, data5_lines, data6_lines]
+
+        dataset = os.path.join(DATA_DIR, "datasets", "text_line_dataset_20211008")
+        mkdir_if_not_exist(dataset)
+
+        pool = Pool(processes=100)
+        for label_idx, data_lines in enumerate(data_list):
+            label_dir = os.path.join(dataset, "{}".format(str(label_idx).zfill(3)))
+            mkdir_if_not_exist(label_dir)
+            for data_idx, data_line in enumerate(data_lines):
+                # Labeled2Dataset.process_dataset(data_line, label_dir, label_idx, data_idx)
+                pool.apply_async(Labeled2Dataset.process_dataset, (data_line, label_dir, label_idx, data_idx))
+        pool.close()
+        pool.join()
+        print('[Info] 数据集处理完成: {}'.format(dataset))
+
 
 def main():
     l2d = Labeled2Dataset()
-    l2d.process_v1()
+    # l2d.process_v1()
+    l2d.process_v3()
     # l2d.filter_labeled_file()
 
 

@@ -804,7 +804,7 @@ def sorted_index(myList, reverse=True):
     return idx_list
 
 
-def download_url_img(url):
+def download_url_img(url, is_mul=False):
     """
     下载url图像
     """
@@ -814,7 +814,8 @@ def download_url_img(url):
 
     try:
         response = requests.get(url, verify=False)
-        time.sleep(3)
+        if is_mul:  # 避免错误
+            time.sleep(3)
     except Exception as e:
         print(str(e))
         return False, []
