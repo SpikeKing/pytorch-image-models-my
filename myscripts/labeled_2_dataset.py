@@ -27,7 +27,35 @@ class Labeled2Dataset(object):
         pass
 
     @staticmethod
-    def load_data_file(file_list, discard=4, key="radio_1"):
+    def process_csv_row_v1(row_list):
+        data_dict = collections.defaultdict(list)
+        for row_idx, row in enumerate(row_list):
+            url = eval(row["问题内容"])[0]
+            label = eval(row["回答内容"])["radio_1"]
+            if not label:
+                continue
+            data_dict[url].append(label)
+        return data_dict
+
+    @staticmethod
+    def process_csv_row_v2(row_list, label_dict):
+        data_dict = collections.defaultdict(list)
+        for row_idx, row in enumerate(row_list):
+            url = eval(row["问题内容"])[0]
+            pre_label = eval(row["问题内容"])[1]
+            radio_1 = eval(row["回答内容"])["radio_1"]
+            radio_2 = eval(row["回答内容"])["radio_2"]
+            if radio_1 == "0":
+                label = pre_label
+                data_dict[url].append(label)
+            else:
+                if not radio_2:
+                    continue
+                data_dict[url].append(label_dict[int(radio_2)])
+        return data_dict
+
+    @staticmethod
+    def load_data_file(file_list, label_dict):
         """
         加载数据文件
         """
@@ -40,23 +68,31 @@ class Labeled2Dataset(object):
         print('[Info] 样本数: {}'.format(len(row_list)))
         print('[Info] row: {}'.format(row_list[0]))
 
-        data_dict = collections.defaultdict(list)
-        for row_idx, row in enumerate(row_list):
-            url = eval(row["问题内容"])[0]
-            label = eval(row["回答内容"])[key]
-            if not label:
-                continue
-            data_dict[url].append(label)
+        data_dict = Labeled2Dataset.process_csv_row_v2(row_list, label_dict)
 
         right_dict = collections.defaultdict(list)
         for url in data_dict.keys():
             raw_labels = data_dict[url]
             labels = list(set(raw_labels))
-            if len(labels) == 1 and len(raw_labels) == 2:
+            if len(labels) == 1 and len(raw_labels) >= 2:
                 label = labels[0]
-                if label and int(label) == discard:
+                if not label:
                     continue
                 right_dict[label].append(url)
+
+        print("-" * 200)
+        all_num = 0
+        for label in right_dict.keys():
+            num = len(right_dict[label])
+            all_num += num
+        print('[Info] 样本总数: {}'.format(all_num))
+
+        for label in right_dict.keys():
+            print('[Info] ' + "-" * 50)
+            print('[Info] label: {}'.format(label))
+            print('[Info] 样本数: {}'.format(len(right_dict[label])))
+            print('[Info] 占比: {} %'.format(safe_div(len(right_dict[label]), all_num) * 100))
+        print("-" * 200)
 
         return right_dict
 
@@ -87,23 +123,12 @@ class Labeled2Dataset(object):
             print('[Info] \t处理完成: {}'.format(idx))
 
     @staticmethod
-    def save_data(right_dict, label_dict, label_format_name, html_name, discard=4):
-        print("-" * 200)
-        all_num = 0
-        for label in right_dict.keys():
-            if int(label) == discard:
-                continue
-            num = len(right_dict[label])
-            all_num += num
-        print('[Info] 样本总数: {}'.format(all_num))
-
+    def save_data(right_dict, label_format_name, html_name):
         pool = Pool(processes=100)
         for label in right_dict.keys():
             print('[Info] ' + "-" * 50)
-            print('[Info] label: {}'.format(label_dict[int(label)]))
             print('[Info] 样本数: {}'.format(len(right_dict[label])))
-            print('[Info] 占比: {} %'.format(safe_div(len(right_dict[label]), all_num) * 100))
-            label_file = label_format_name.format(label_dict[int(label)])
+            label_file = label_format_name.format(label)
             create_file(label_file)
             # write_list_to_file(label_file, right_dict[label])  # 直接写入
             for idx, url in enumerate(right_dict[label]):
@@ -119,9 +144,8 @@ class Labeled2Dataset(object):
             random.seed(47)
             random.shuffle(urls)
             urls = urls[:count]
-            label_str = label_dict[int(label)]
             for url in urls:
-                items.append([url, label_str])
+                items.append([url, label])
 
         make_html_page(html_name, items)
         print('[Info] 处理完成: {}'.format(html_name))
@@ -139,9 +163,9 @@ class Labeled2Dataset(object):
         print('[Info] 处理文件: {}'.format(file2_name))
         print('[Info] 处理文件: {}'.format(file3_name))
 
-        right_dict = Labeled2Dataset.load_data_file([file1_name, file2_name, file3_name], discard=-1, key="radio_2")
+        right_dict = Labeled2Dataset.load_data_file([file1_name, file2_name, file3_name], label_dict)
 
-        Labeled2Dataset.save_data(right_dict, label_dict, label_format_name, html_name, discard=-1)
+        Labeled2Dataset.save_data(right_dict, label_format_name, html_name)
 
     @staticmethod
     def process_v2():
@@ -163,7 +187,7 @@ class Labeled2Dataset(object):
 
         right_dict = Labeled2Dataset.merge_data_dict(right1_dict, right2_dict)
 
-        Labeled2Dataset.save_data(right_dict, label_dict, label_format_name, html_name)
+        Labeled2Dataset.save_data(right_dict, label_format_name, html_name)
 
 
 def main():
