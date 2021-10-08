@@ -272,7 +272,7 @@ class Labeled2Dataset(object):
 def main():
     l2d = Labeled2Dataset()
     # l2d.process_v1()
-    l2d.process_v3()
+    l2d.make_dataset()
     # l2d.filter_labeled_file()
 
 
