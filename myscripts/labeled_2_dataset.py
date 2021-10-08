@@ -219,11 +219,24 @@ class Labeled2Dataset(object):
     @staticmethod
     def process_dataset(data_line, label_dir, label_idx, data_idx):
         _, img_bgr = download_url_img(data_line)
+        img_bgr = resize_crop_square(img_bgr)
         file_path = os.path.join(label_dir, "{}_{}.jpg".format(str(label_idx).zfill(3), str(data_idx).zfill(7)))
         cv2.imwrite(file_path, img_bgr)
         if data_idx % 1000 == 0:
             print("[Info] \t data_idx: {}".format(data_idx))
             time.sleep(10)
+
+    @staticmethod
+    def split_train_and_val(data_lines, gap):
+        random.seed(47)
+        random.shuffle(data_lines)
+        train_num = len(data_lines) // gap * (gap - 1)
+        val_num = len(data_lines) - train_num
+        print('[Info] train_num: {}, val_num: {}'.format(train_num, val_num))
+        train_data = data_lines[:train_num]
+        val_data = data_lines[train_num:]
+        return train_data, val_data
+
 
     @staticmethod
     def make_dataset():
@@ -235,32 +248,54 @@ class Labeled2Dataset(object):
         file5_path = os.path.join(folder_path, "text_line_4c_艺术字.20211008.txt")
         file6_path = os.path.join(folder_path, "text_line_4c_无文字.20211008.txt")
 
+        gap = 20
+
         data1_lines = read_file(file1_path)
-        data1_lines = get_fixed_samples(data1_lines, 100000)
+        train1_data, val1_data = Labeled2Dataset.split_train_and_val(data1_lines, gap)
+        train1_data = get_fixed_samples(train1_data, 100000)
+        val1_data = get_fixed_samples(val1_data, 100000 // gap)
 
         data2_lines = read_file(file2_path)
-        data2_lines = get_fixed_samples(data2_lines, 50000)
+        train2_data, val2_data = Labeled2Dataset.split_train_and_val(data2_lines, gap)
+        train2_data = get_fixed_samples(train2_data, 50000)
+        val2_data = get_fixed_samples(val2_data, 50000 // gap)
 
         data3_lines = read_file(file3_path)
-        data3_lines = get_fixed_samples(data3_lines, 30000)
+        train3_data, val3_data = Labeled2Dataset.split_train_and_val(data3_lines, gap)
+        train3_data = get_fixed_samples(train3_data, 30000)
+        val3_data = get_fixed_samples(val3_data, 30000 // gap)
 
         data4_lines = read_file(file4_path)
-        data4_lines = get_fixed_samples(data4_lines, 5000)
+        train4_data, val4_data = Labeled2Dataset.split_train_and_val(data4_lines, gap)
+        train4_data = get_fixed_samples(train4_data, 5000)
+        val4_data = get_fixed_samples(val4_data, 5000 // gap)
 
         data5_lines = read_file(file5_path)
-        data5_lines = get_fixed_samples(data5_lines, 50000)
+        train5_data, val5_data = Labeled2Dataset.split_train_and_val(data5_lines, gap)
+        train5_data = get_fixed_samples(train5_data, 50000)
+        val5_data = get_fixed_samples(val5_data, 50000 // gap)
 
         data6_lines = read_file(file6_path)
-        data6_lines = get_fixed_samples(data6_lines, 5000)
+        train6_data, val6_data = Labeled2Dataset.split_train_and_val(data6_lines, gap)
+        train6_data = get_fixed_samples(train6_data, 5000)
+        val6_data = get_fixed_samples(val6_data, 5000 // gap)
 
-        data_list = [data1_lines, data2_lines, data3_lines, data4_lines, data5_lines, data6_lines]
+        train_list = [train1_data, train2_data, train3_data, train4_data, train5_data, train6_data]
+        val_list = [val1_data, val2_data, val3_data, val4_data, val5_data, val6_data]
 
         dataset = os.path.join(DATA_DIR, "datasets", "text_line_dataset_20211008")
         mkdir_if_not_exist(dataset)
 
         pool = Pool(processes=100)
-        for label_idx, data_lines in enumerate(data_list):
-            label_dir = os.path.join(dataset, "{}".format(str(label_idx).zfill(3)))
+        for label_idx, data_lines in enumerate(train_list):
+            label_dir = os.path.join(dataset, "train", "{}".format(str(label_idx).zfill(3)))
+            mkdir_if_not_exist(label_dir)
+            for data_idx, data_line in enumerate(data_lines):
+                # Labeled2Dataset.process_dataset(data_line, label_dir, label_idx, data_idx)
+                pool.apply_async(Labeled2Dataset.process_dataset, (data_line, label_dir, label_idx, data_idx))
+
+        for label_idx, data_lines in enumerate(val_list):
+            label_dir = os.path.join(dataset, "val", "{}".format(str(label_idx).zfill(3)))
             mkdir_if_not_exist(label_dir)
             for data_idx, data_line in enumerate(data_lines):
                 # Labeled2Dataset.process_dataset(data_line, label_dir, label_idx, data_idx)
