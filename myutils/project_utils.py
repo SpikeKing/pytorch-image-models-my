@@ -810,7 +810,7 @@ def download_url_img(url):
     import cv2
     import requests
     import urllib3
-    
+
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
     try:

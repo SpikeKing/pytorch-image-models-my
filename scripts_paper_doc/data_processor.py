@@ -128,11 +128,15 @@ class DataProcessor(object):
         train1_data, val1_data = split_train_and_val(data1_lines, gap)
         train1_data = get_fixed_samples(train1_data, num)
         val1_data = get_fixed_samples(val1_data, num // gap)
+        print('[Info] train1_data: {}'.format(len(train1_data)))
+        print('[Info] val1_data: {}'.format(len(val1_data)))
 
         data2_lines = read_file(nat_path)
         train2_data, val2_data = split_train_and_val(data2_lines)
         train2_data = get_fixed_samples(train2_data, num)
         val2_data = get_fixed_samples(val2_data, num // gap)
+        print('[Info] train2_data: {}'.format(len(train2_data)))
+        print('[Info] val2_data: {}'.format(len(val2_data)))
 
         # 抽象为单独的函数
         generate_dataset_mul(dataset_dir, [train1_data, train2_data], [val1_data, val2_data])
