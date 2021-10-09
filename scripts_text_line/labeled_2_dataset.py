@@ -290,8 +290,8 @@ class Labeled2Dataset(object):
         val6_data = get_fixed_samples(val6_data, 5000 // gap)
         print('[Info] 无文字: {} {}'.format(len(train6_data), len(val6_data)))
 
-        train_list = [train1_data, train2_data, train3_data, train4_data, train5_data, train6_data]
-        val_list = [val1_data, val2_data, val3_data, val4_data, val5_data, val6_data]
+        train_list = [train1_data, train2_data, train5_data, train6_data]
+        val_list = [val1_data, val2_data, val5_data, val6_data]
 
         dataset = os.path.join(DATA_DIR, "datasets", "text_line_dataset_c4_20211009")
         mkdir_if_not_exist(dataset)
