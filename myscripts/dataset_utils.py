@@ -40,16 +40,16 @@ def generate_dataset_mul(dataset_dir, train_list, val_list):
     val_dir = os.path.join(dataset_dir, "val")
     mkdir_if_not_exist(val_dir)
 
-    def process_data_list(data_list_, pool_):
+    def process_data_list(data_list_, pool_, data_dir):
         for label_idx, data_lines in enumerate(data_list_):
-            label_dir = os.path.join(train_dir, "{}".format(str(label_idx).zfill(3)))
+            label_dir = os.path.join(data_dir, "{}".format(str(label_idx).zfill(3)))
             mkdir_if_not_exist(label_dir)
             for data_idx, data_line in enumerate(data_lines):
                 pool_.apply_async(process_sample_url, (data_line, label_dir, label_idx, data_idx))
 
     pool = Pool(processes=100)
-    process_data_list(train_list, pool)
-    process_data_list(val_list, pool)
+    process_data_list(train_list, pool, train_dir)
+    process_data_list(val_list, pool, val_dir)
     pool.close()
     pool.join()
     print('[Info] 数据集处理完成: {}'.format(dataset_dir))
