@@ -318,7 +318,7 @@ def main():
                             "Metrics not being logged to wandb, try `pip install wandb`")
              
     args.prefetcher = not args.no_prefetcher
-    args.distributed = True
+    args.distributed = False
     if 'WORLD_SIZE' in os.environ:
         args.distributed = int(os.environ['WORLD_SIZE']) > 1
     args.device = 'cuda:0'
