@@ -971,3 +971,16 @@ def get_fixed_samples(a_list, num=20000):
     x_list = x_list[:num]
     return x_list
 
+
+def split_train_and_val(data_lines, gap=20):
+    """
+    分离数据集为训练和验证
+    """
+    print('[Info] 样本总数: {}'.format(len(data_lines)))
+    random.seed(47)
+    random.shuffle(data_lines)
+    train_num = len(data_lines) // gap * (gap - 1)
+    train_data = data_lines[:train_num]
+    val_data = data_lines[train_num:]
+    print('[Info] train: {}, val: {}'.format(len(train_data), len(val_data)))
+    return train_data, val_data
