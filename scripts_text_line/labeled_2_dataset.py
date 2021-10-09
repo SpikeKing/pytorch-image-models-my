@@ -252,38 +252,48 @@ class Labeled2Dataset(object):
 
         data1_lines = read_file(file1_path)
         train1_data, val1_data = Labeled2Dataset.split_train_and_val(data1_lines, gap)
-        train1_data = get_fixed_samples(train1_data, 100000)
-        val1_data = get_fixed_samples(val1_data, 100000 // gap)
-
-        data2_lines = read_file(file2_path)
-        train2_data, val2_data = Labeled2Dataset.split_train_and_val(data2_lines, gap)
-        train2_data = get_fixed_samples(train2_data, 50000)
-        val2_data = get_fixed_samples(val2_data, 50000 // gap)
+        train1_data = get_fixed_samples(train1_data, 80000)
+        val1_data = get_fixed_samples(val1_data, 80000 // gap)
 
         data3_lines = read_file(file3_path)
         train3_data, val3_data = Labeled2Dataset.split_train_and_val(data3_lines, gap)
-        train3_data = get_fixed_samples(train3_data, 30000)
-        val3_data = get_fixed_samples(val3_data, 30000 // gap)
+        train3_data = get_fixed_samples(train3_data, 20000)
+        val3_data = get_fixed_samples(val3_data, 20000 // gap)
+
+        train1_data = train1_data + train3_data
+        val1_data = val1_data + val3_data
+        print('[Info] 印刷文字: {} {}'.format(len(train1_data), len(val1_data)))
+
+        data2_lines = read_file(file2_path)
+        train2_data, val2_data = Labeled2Dataset.split_train_and_val(data2_lines, gap)
+        train2_data = get_fixed_samples(train2_data, 45000)
+        val2_data = get_fixed_samples(val2_data, 45000 // gap)
 
         data4_lines = read_file(file4_path)
         train4_data, val4_data = Labeled2Dataset.split_train_and_val(data4_lines, gap)
         train4_data = get_fixed_samples(train4_data, 5000)
         val4_data = get_fixed_samples(val4_data, 5000 // gap)
 
+        train2_data = train2_data + train4_data
+        val2_data = val2_data + val4_data
+        print('[Info] 手写文字: {} {}'.format(len(train2_data), len(val2_data)))
+
         data5_lines = read_file(file5_path)
         train5_data, val5_data = Labeled2Dataset.split_train_and_val(data5_lines, gap)
         train5_data = get_fixed_samples(train5_data, 50000)
         val5_data = get_fixed_samples(val5_data, 50000 // gap)
+        print('[Info] 艺术字: {} {}'.format(len(train5_data), len(val5_data)))
 
         data6_lines = read_file(file6_path)
         train6_data, val6_data = Labeled2Dataset.split_train_and_val(data6_lines, gap)
         train6_data = get_fixed_samples(train6_data, 5000)
         val6_data = get_fixed_samples(val6_data, 5000 // gap)
+        print('[Info] 无文字: {} {}'.format(len(train6_data), len(val6_data)))
 
         train_list = [train1_data, train2_data, train3_data, train4_data, train5_data, train6_data]
         val_list = [val1_data, val2_data, val3_data, val4_data, val5_data, val6_data]
 
-        dataset = os.path.join(DATA_DIR, "datasets", "text_line_dataset_20211008")
+        dataset = os.path.join(DATA_DIR, "datasets", "text_line_dataset_c4_20211009")
         mkdir_if_not_exist(dataset)
 
         pool = Pool(processes=100)
