@@ -7,15 +7,14 @@ Created by C. L. Wang on 27.9.21
 
 import os
 import sys
-import cv2
-from multiprocessing.pool import Pool
 
-from myscripts.dataset_utils import generate_dataset_mul
+import cv2
 
 p = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if p not in sys.path:
     sys.path.append(p)
 
+from myscripts.dataset_utils import generate_dataset_mul
 from root_dir import DATA_DIR
 from myutils.project_utils import *
 
