@@ -9,11 +9,10 @@ Created by C. L. Wang on 2018/7/9
 
 # from __future__ import absolute_import
 
-import pathlib
-import glob
 import collections
 import io
 import os
+import pathlib
 import random
 import shutil
 import sys
@@ -808,9 +807,11 @@ def download_url_img(url):
     """
     下载url图像
     """
-    import time
     import cv2
     import requests
+    import urllib3
+    
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
     try:
         response = requests.get(url, verify=False)
