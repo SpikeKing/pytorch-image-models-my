@@ -43,7 +43,7 @@ class DatasetMaker(object):
             for data_line in data_lines:
                 items = data_line.split("\t")
                 urls.append(items[0])
-            print('[Info] 样本数: {}'.format(urls))
+            print('[Info] 样本数: {}'.format(len(urls)))
             if type_name == "train":
                 train_list.append(urls)
             else:
