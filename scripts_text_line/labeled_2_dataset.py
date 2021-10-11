@@ -300,16 +300,25 @@ class Labeled2Dataset(object):
         for label_idx, data_lines in enumerate(train_list):
             label_dir = os.path.join(dataset, "train", "{}".format(str(label_idx).zfill(3)))
             mkdir_if_not_exist(label_dir)
-            for data_idx, data_line in enumerate(data_lines):
+
+            label_file = os.path.join(dataset, "train_{}.txt".format(str(label_idx).zfill(3)))
+            write_list_to_file(label_file, data_lines)  # 写入url
+
+            # for data_idx, data_line in enumerate(data_lines):
                 # Labeled2Dataset.process_dataset(data_line, label_dir, label_idx, data_idx)
-                pool.apply_async(Labeled2Dataset.process_dataset, (data_line, label_dir, label_idx, data_idx))
+                # pool.apply_async(Labeled2Dataset.process_dataset, (data_line, label_dir, label_idx, data_idx))
 
         for label_idx, data_lines in enumerate(val_list):
             label_dir = os.path.join(dataset, "val", "{}".format(str(label_idx).zfill(3)))
             mkdir_if_not_exist(label_dir)
-            for data_idx, data_line in enumerate(data_lines):
+
+            label_file = os.path.join(dataset, "val_{}.txt".format(str(label_idx).zfill(3)))
+            write_list_to_file(label_file, data_lines)  # 写入url
+
+            # for data_idx, data_line in enumerate(data_lines):
                 # Labeled2Dataset.process_dataset(data_line, label_dir, label_idx, data_idx)
-                pool.apply_async(Labeled2Dataset.process_dataset, (data_line, label_dir, label_idx, data_idx))
+                # pool.apply_async(Labeled2Dataset.process_dataset, (data_line, label_dir, label_idx, data_idx))
+            
         pool.close()
         pool.join()
         print('[Info] 数据集处理完成: {}'.format(dataset))
