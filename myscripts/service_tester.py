@@ -47,7 +47,24 @@ class ServiceTester(object):
         return img_url
 
     @staticmethod
-    def process_img_path(img_idx, img_path, service,  out_file, out_all_file):
+    def write_results(out_file_format, res):
+        """
+        写入结果
+        """
+        out_all_file = out_file_format + "_all.txt"
+        out_rgt_file = out_file_format + "_rgt.txt"
+        out_err_file = out_file_format + "_err.txt"
+
+        img_url, r_label, p_label = res
+
+        write_line(out_all_file, "{}\t{}\t{}".format(*res))
+        if p_label != r_label:
+            write_line(out_err_file, "{}\t{}\t{}".format(*res))
+        else:
+            write_line(out_rgt_file, "{}\t{}\t{}".format(*res))
+
+    @staticmethod
+    def process_img_path(img_idx, img_path, service,  out_file_format):
         img_bgr = cv2.imread(img_path)
         res_dict = get_vpf_service_np(img_np=img_bgr, service_name=service)  # 表格
         p_label = res_dict["data"]["label"]
@@ -57,31 +74,47 @@ class ServiceTester(object):
         img_name = "{}-{}.jpg".format(get_current_time_str(), time.time())
         img_url = ServiceTester.save_img_path(img_bgr, img_name)
 
-        write_line(out_all_file, "{}\t{}\t{}".format(img_url, r_label, p_label))
-        if p_label != r_label:
-            write_line(out_file, "{}\t{}\t{}".format(img_url, r_label, p_label))
+        res = [img_url, r_label, p_label]
+        ServiceTester.write_results(out_file_format, res)
 
         print('[Info] 处理完成: {}, right: {}'.format(img_idx, p_label == r_label))
 
     @staticmethod
-    def process_img_url(img_idx, img_url, service,  out_file, out_all_file):
+    def process_img_url(img_idx, img_url, service,  out_file_format):
         res_dict = get_vpf_service(img_url=img_url, service_name=service)  # 表格
         p_label = res_dict["data"]["label"]
         p_label = int(p_label)
         r_label = int(img_url.split("/")[-2])
 
-        write_line(out_all_file, "{}\t{}\t{}".format(img_url, r_label, p_label))
-        if p_label != r_label:
-            write_line(out_file, "{}\t{}\t{}".format(img_url, r_label, p_label))
+        res = [img_url, r_label, p_label]
+        ServiceTester.write_results(out_file_format, res)
 
         print('[Info] 处理完成: {}, right: {}'.format(img_idx, p_label == r_label))
 
+    @staticmethod
+    def write_html_results(out_file_format, label_str_list):
+        """
+        写入结果
+        """
+        out_all_file = out_file_format + "_all.txt"
+        out_rgt_file = out_file_format + "_rgt.txt"
+        out_err_file = out_file_format + "_err.txt"
+        file_list = [out_all_file, out_rgt_file, out_err_file]
+
+        for file_path in file_list:
+            out_html = file_path.replace("txt", "html")
+            data_lines = read_file(file_path)
+            out_list = []
+            for data_line in data_lines:
+                img_url, r_label, p_label = data_line.split("\t")
+                out_list.append([img_url, label_str_list[int(r_label)], label_str_list[int(p_label)]])
+            make_html_page(out_html, out_list)
+            print('[Info] 处理完成: {}'.format(out_html))
+
+
     def process_folder(self):
         time_str = get_current_time_str()
-        out_file = os.path.join(self.out_folder, "val_err_{}.txt".format(time_str))
-        out_all_file = os.path.join(self.out_folder, "val_all_{}.txt".format(time_str))
-        out_html = os.path.join(self.out_folder, "val_err_{}.html".format(time_str))
-        out_all_html = os.path.join(self.out_folder, "val_all_{}.html".format(time_str))
+        out_file_format = os.path.join(self.out_folder, "val_{}".format(time_str))
 
         if self.label_file:
             label_str_list = read_file(self.label_file)
@@ -104,35 +137,23 @@ class ServiceTester(object):
             print('[Info] 文件数: {}'.format(n_sample))
             for img_idx, img_path in enumerate(paths_list):
                 pool.apply_async(
-                    ServiceTester.process_img_path, (img_idx, img_path, self.service, out_file, out_all_file))
+                    ServiceTester.process_img_path, (img_idx, img_path, self.service, out_file_format))
         else:
             urls = read_file(self.in_file_or_folder)
             urls, n_sample = filter_data_list(urls, self.num_of_samples)
             print('[Info] 文件数: {}'.format(n_sample))
             for img_idx, img_url in enumerate(urls):
                 pool.apply_async(
-                    ServiceTester.process_img_url, (img_idx, img_url, self.service, out_file, out_all_file))
+                    ServiceTester.process_img_url, (img_idx, img_url, self.service, out_file_format))
         pool.close()
         pool.join()
 
-        print('[Info] 处理完成: {}'.format(out_file))
-        data_lines = read_file(out_file)
-        print('[Info] 正确率: {}'.format(safe_div(n_sample - len(data_lines), n_sample)))
-        out_list = []
-        for data_line in data_lines:
-            img_url, r_label, p_label = data_line.split("\t")
-            out_list.append([img_url, label_str_list[int(r_label)], label_str_list[int(p_label)]])
-        make_html_page(out_html, out_list)
+        data_lines = read_file(out_file_format + "_err.txt")
+        n_err = len(data_lines)
+        print('[Info] 正确率: {}, {}/{}'.format(safe_div(n_sample - n_err, n_sample), n_err, n_sample))
+        ServiceTester.write_html_results(out_file_format, label_str_list)
 
-        data_lines = read_file(out_all_file)
-        out_list = []
-        for data_line in data_lines:
-            img_url, r_label, p_label = data_line.split("\t")
-            out_list.append([img_url, label_str_list[int(r_label)], label_str_list[int(p_label)]])
-        make_html_page(out_all_html, out_list)
-
-        print('[Info] 处理完成: {}'.format(out_html))
-        print('[Info] 处理完成: {}'.format(out_all_html))
+        print('[Info] 全部处理完成!')
 
 
 def parse_args():
