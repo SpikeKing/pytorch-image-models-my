@@ -97,7 +97,7 @@ class SampleCleaner(object):
             p_label = str(p_label)
             p_label_list.append(p_label)
 
-        if int(fixed_label) > 0:
+        if int(fixed_label) >= 0:
             r_label = str(fixed_label)
         else:
             r_label = str(img_url.split("/")[-2])
