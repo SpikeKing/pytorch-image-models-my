@@ -123,7 +123,7 @@ class SampleCleaner(object):
             out_html = file_path.replace("txt", "html")
             data_lines = read_file(file_path)
             out_list = []
-            max_num = min(200, len(data_lines))
+            max_num = min(100, len(data_lines))
             random.seed(47)
             random.shuffle(data_lines)
             data_lines = data_lines[:max_num]
