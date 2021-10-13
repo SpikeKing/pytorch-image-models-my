@@ -97,7 +97,7 @@ class SampleCleaner(object):
             p_label_list.append(p_label)
 
         if fixed_label != -1:
-            r_label = fixed_label
+            r_label = str(fixed_label)
         else:
             r_label = str(img_url.split("/")[-2])
 
@@ -105,7 +105,8 @@ class SampleCleaner(object):
         SampleCleaner.write_results(out_file_format, res)
 
         x_labels = list(set(p_label_list + [r_label]))
-        print('[Info] 处理完成: {}, right: {}'.format(img_idx, len(x_labels) == 1))
+        if img_idx % 100 == 0:
+            print('[Info] 处理完成: {}, right: {}'.format(img_idx, len(x_labels) == 1))
 
     @staticmethod
     def write_html_results(out_file_format, label_str_list):
@@ -122,6 +123,8 @@ class SampleCleaner(object):
             data_lines = read_file(file_path)
             out_list = []
             max_num = min(200, len(data_lines))
+            random.seed(47)
+            random.shuffle(data_lines)
             data_lines = data_lines[:max_num]
 
             for data_line in data_lines:
