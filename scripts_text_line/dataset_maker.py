@@ -20,22 +20,16 @@ from root_dir import DATA_DIR
 
 class DatasetMaker(object):
     def __init__(self):
-        self.in_folder = os.path.join(DATA_DIR, "datasets", "text_line_dataset_c4_20211011_files")
-        self.out_folder = os.path.join(DATA_DIR, "datasets", "text_line_dataset_c4_20211011")
+        self.in_folder = os.path.join(DATA_DIR, "datasets", "text_line_dataset_c4_20211013_files")
+        self.out_folder = os.path.join(DATA_DIR, "datasets", "text_line_dataset_c4_20211013")
 
     def process(self):
         print('[Info] 输入文件夹: {}'.format(self.in_folder))
         paths_list, _ = traverse_dir_files(self.in_folder)
-        new_paths_list = []
-        for path in paths_list:
-            tag = path.split("_")[-1]
-            if tag == "rgt.txt":
-                new_paths_list.append(path)
-        print('[Info] 过滤文件数: {}'.format(len(new_paths_list)))
 
         train_list, val_list = [], []
-        for path in new_paths_list:
-            folder_name = path.split("/")[-2]
+        for path in paths_list:
+            folder_name = path.split("/")[-1]
             type_name, label_name = folder_name.split("_")
             print('[Info] type_name: {}, label_name: {}'.format(type_name, label_name))
             data_lines = read_file(path)
