@@ -73,10 +73,10 @@ class SampleCleaner(object):
         for service in service_list:
             res_dict = get_vpf_service_np(img_np=img_bgr, service_name=service)  # 表格
             p_label = res_dict["data"]["label"]
-            p_label = int(p_label)
+            p_label = str(p_label)
             p_label_list.append(p_label)
 
-        r_label = int(img_path.split("/")[-2])
+        r_label = str(img_path.split("/")[-2])
 
         img_name = "{}-{}.jpg".format(get_current_time_str(), time.time())
         img_url = SampleCleaner.save_img_path(img_bgr, img_name)
@@ -93,13 +93,13 @@ class SampleCleaner(object):
         for service in service_list:
             res_dict = get_vpf_service(img_url=img_url, service_name=service)  # 表格
             p_label = res_dict["data"]["label"]
-            p_label = int(p_label)
+            p_label = str(p_label)
             p_label_list.append(p_label)
 
         if fixed_label != -1:
             r_label = fixed_label
         else:
-            r_label = int(img_url.split("/")[-2])
+            r_label = str(img_url.split("/")[-2])
 
         res = [img_url, r_label, *p_label_list]
         SampleCleaner.write_results(out_file_format, res)
@@ -128,7 +128,7 @@ class SampleCleaner(object):
                 items = data_line.split("\t")
                 img_url = items[0]
                 labels = items[1:]
-                out_labels = [label_str_list[int(i)] for i in labels]
+                out_labels = [label_str_list[str(i)] for i in labels]
                 out_list.append([img_url, *out_labels])
             make_html_page(out_html, out_list)
             print('[Info] 处理完成: {}'.format(out_html))
@@ -165,6 +165,7 @@ class SampleCleaner(object):
             urls, n_sample = SampleCleaner.filter_data_list(urls, self.num_of_samples)
             print('[Info] 文件数: {}'.format(n_sample))
             for img_idx, img_url in enumerate(urls):
+                # SampleCleaner.process_img_url(img_idx, img_url, self.service_list, out_file_format, self.fixed_label)
                 pool.apply_async(
                     SampleCleaner.process_img_url, (img_idx, img_url, self.service_list, out_file_format, self.fixed_label))
         pool.close()
