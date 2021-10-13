@@ -29,7 +29,7 @@ class SampleCleaner(object):
         self.service_list = service_list.split("+")
         self.label_file = label_file
         self.num_of_samples = num_of_samples
-        self.fixed_label = fixed_label
+        self.fixed_label = str(fixed_label)
         print('[Info] 输入文件或文件夹: {}'.format(self.in_file_or_folder))
         print('[Info] 服务: {}'.format(self.service_list))
         print('[Info] 输出文件夹: {}'.format(self.out_folder))
@@ -61,6 +61,7 @@ class SampleCleaner(object):
         x_labels = list(set(res[1:]))
 
         write_line(out_all_file, "\t".join(res))
+        print("[Info] x_labels: {}, len: {}".format(x_labels, len(x_labels)))
         if len(x_labels) == 1:
             write_line(out_err_file, img_url)
         else:
@@ -96,7 +97,7 @@ class SampleCleaner(object):
             p_label = str(p_label)
             p_label_list.append(p_label)
 
-        if fixed_label != -1:
+        if int(fixed_label) > 0:
             r_label = str(fixed_label)
         else:
             r_label = str(img_url.split("/")[-2])
