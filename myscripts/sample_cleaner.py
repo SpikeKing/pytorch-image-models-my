@@ -131,7 +131,7 @@ class SampleCleaner(object):
                 items = data_line.split("\t")
                 img_url = items[0]
                 labels = items[1:]
-                out_labels = [label_str_list[str(i)] for i in labels]
+                out_labels = [label_str_list[int(i)] for i in labels]
                 out_list.append([img_url, *out_labels])
             make_html_page(out_html, out_list)
             print('[Info] 处理完成: {}'.format(out_html))
