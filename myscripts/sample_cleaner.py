@@ -62,7 +62,7 @@ class SampleCleaner(object):
 
         write_line(out_all_file, "\t".join(res))
         print("[Info] x_labels: {}, len: {}".format(x_labels, len(x_labels)))
-        if len(x_labels) == 1:
+        if len(x_labels) != 1:
             write_line(out_err_file, img_url)
         else:
             write_line(out_rgt_file, "\t".join(res))
