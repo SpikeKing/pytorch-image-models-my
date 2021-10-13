@@ -63,9 +63,9 @@ class SampleCleaner(object):
         write_line(out_all_file, "\t".join(res))
         # print("[Info] x_labels: {}, len: {}".format(x_labels, len(x_labels)))
         if len(x_labels) != 1:
-            write_line(out_err_file, img_url)
+            write_line(out_err_file, "\t".join(res))
         else:
-            write_line(out_rgt_file, "\t".join(res))
+            write_line(out_rgt_file, img_url)
 
     @staticmethod
     def process_img_path(img_idx, img_path, service_list,  out_file_format):
