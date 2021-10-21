@@ -219,7 +219,7 @@ class Labeled2Dataset(object):
     @staticmethod
     def process_dataset(data_line, label_dir, label_idx, data_idx):
         _, img_bgr = download_url_img(data_line)
-        img_bgr = resize_crop_square(img_bgr)
+        img_bgr = resize_square(img_bgr)
         file_path = os.path.join(label_dir, "{}_{}.jpg".format(str(label_idx).zfill(3), str(data_idx).zfill(7)))
         cv2.imwrite(file_path, img_bgr)
         if data_idx % 1000 == 0:

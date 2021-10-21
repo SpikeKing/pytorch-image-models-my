@@ -127,12 +127,12 @@ class ImgPredictor(object):
         str_list = [label_list[int(ci)] for ci in catid_list]
         return str_list
 
-    def save_pt(self, pt_folder_path):
+    def save_pt(self, pt_folder_path, size=336):
         print('[Info] pt存储开始')
         mkdir_if_not_exist(pt_folder_path)
         model_name = self.model_path.split("/")[-1].split(".")[0]
         print('[Info] 模型名称: {}'.format(model_name))
-        dummy_shape = (1, 3, 336, 336)  # 不影响模型
+        dummy_shape = (1, 3, size, size)  # 不影响模型
         print('[Info] dummy_shape: {}'.format(dummy_shape))
         if torch.cuda.is_available():
             model_type = "cuda"

@@ -24,6 +24,7 @@ def parse_args():
     parser.add_argument('-m', dest='model_path', required=True, help='模型路径', type=str)
     parser.add_argument('-n', dest='base_net', required=False, help='basenet', type=str, default="resnet50")
     parser.add_argument('-c', dest='num_classes', required=False, help='类别个数', type=int, default=2)
+    parser.add_argument('-s', dest='img_size', required=False, help='图像尺寸', type=int, default=336)
     parser.add_argument('-o', dest='out_dir', required=False, help='输出文件夹', type=str,
                         default=os.path.join(DATA_DIR, "pt_models"))
 
@@ -38,10 +39,13 @@ def parse_args():
     arg_num_classes = args.num_classes
     print("[Info] 类别数: {}".format(arg_num_classes))
 
+    arg_img_size = args.img_size
+    print("[Info] 图像尺寸: {}".format(arg_img_size))
+
     arg_out_dir = args.out_dir
     print("[Info] 输出文件夹: {}".format(arg_out_dir))
 
-    return arg_model_path, arg_base_net, arg_num_classes, arg_out_dir
+    return arg_model_path, arg_base_net, arg_num_classes, arg_img_size, arg_out_dir
 
 
 def main():
@@ -50,9 +54,9 @@ def main():
     """
     print('[Info] ' + "-" * 100)
     print('[Info] 转换PT模型开始')
-    arg_model_path, arg_base_net, arg_num_classes, arg_out_dir = parse_args()
+    arg_model_path, arg_base_net, arg_num_classes, arg_img_size, arg_out_dir = parse_args()
     me = ImgPredictor(arg_model_path, arg_base_net, arg_num_classes)
-    pt_path = me.save_pt(arg_out_dir)  # 存储PT模型
+    pt_path = me.save_pt(arg_out_dir, arg_img_size)  # 存储PT模型
     print('[Info] 存储完成: {}'.format(pt_path))
     print('[Info] ' + "-" * 100)
 

@@ -1247,7 +1247,7 @@ def check_point_in_box(pnt, box):
         return False
 
 
-def resize_crop_square(img_arr):
+def resize_square(img_arr):
     """
     将长条图像调整为近似的正方形
     """
@@ -1273,6 +1273,23 @@ def resize_crop_square(img_arr):
     else:
         img_out = img_arr
     return img_out
+
+
+def crop_center_by_hw(img_bgr):
+    """
+    避免图像的比例失衡, 感受区域由2倍扩展为4倍
+    """
+    h, w, _ = img_bgr.shape
+    if h // w > 4:
+        mid = h // 2
+        img_crop = img_bgr[mid - 2 * w:mid + 2 * w, :, :]
+        return img_crop
+    if w // h > 4:
+        mid = w // 2
+        img_crop = img_bgr[:, mid - 2 * h:mid + 2 * h, :]
+        return img_crop
+    else:
+        return img_bgr
 
 
 def image_to_base64(image_np, ext='.jpg'):

@@ -28,7 +28,7 @@ class TextLineLabeledDataset(object):
     def process_line(image_idx, img_url, img_path, is_square=False):
         _, img_bgr = download_url_img(img_url)
         if is_square:
-            img_bgr = resize_crop_square(img_bgr)
+            img_bgr = resize_square(img_bgr)
         img_bgr = resize_max_fixed(img_bgr, 512)
         cv2.imwrite(img_path, img_bgr)
         if image_idx % 1000 == 0:

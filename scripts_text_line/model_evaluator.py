@@ -50,7 +50,8 @@ class ModelEvaluator(object):
         """
         预测图像url
         """
-        res_dict = get_vpf_service(img_url, service_name="LvQAecdZrrxkLFs6QiUXsF")
+        # res_dict = get_vpf_service(img_url, service_name="LvQAecdZrrxkLFs6QiUXsF")
+        res_dict = get_vpf_service(img_url, service_name="ZZHxnYZnkarNPM3RvP4QZP")
         p_list = res_dict["data"]["prob_list"]
         return p_list
 
@@ -65,8 +66,8 @@ class ModelEvaluator(object):
 
     @staticmethod
     def predict_dataset():
-        val_file = os.path.join(DATA_DIR, "files_text_line_v2", "val_file_4k_v2.txt")
-        out_file = os.path.join(DATA_DIR, "files_text_line_v2", "val_file_4k_v2_out.{}.txt".format(get_current_time_str()))
+        val_file = os.path.join(DATA_DIR, "files_text_line_v2", "val_file_4k.txt")
+        out_file = os.path.join(DATA_DIR, "files_text_line_v2", "val_file_4k_out_batch.{}.txt".format(get_current_time_str()))
         print('[Info] 评估文件: {}'.format(val_file))
         data_lines = read_file(val_file)
         pool = Pool(processes=100)
@@ -78,10 +79,9 @@ class ModelEvaluator(object):
         print('[Info] 处理完成: {}, 样本数: {}'.format(out_file, len(read_file(out_file))))
 
     @staticmethod
-    def get_results_data():
-        out_file = os.path.join(DATA_DIR, "files_text_line_v2", "val_file_4k_v2_out.20211021160418.txt")
-        print('[Info] 测试结果: {}'.format(out_file))
-        data_lines = read_file(out_file)
+    def get_results_data(in_file):
+        print('[Info] 测试结果: {}'.format(in_file))
+        data_lines = read_file(in_file)
         items_list = []
         for data_line in data_lines:
             items = data_line.split("\t")
@@ -187,7 +187,9 @@ class ModelEvaluator(object):
 
     @staticmethod
     def process_results():
-        items_list = ModelEvaluator.get_results_data()
+        in_file = os.path.join(DATA_DIR, "files_text_line_v2", "val_file_4k_out.20211021183903.txt")
+        # in_file = os.path.join(DATA_DIR, "files_text_line_v2", "val_file_4k_v2_out.20211021182532.txt")
+        items_list = ModelEvaluator.get_results_data(in_file)
         label_str_list = ["印刷文本", "手写文本", "艺术字", "无文字"]
         ModelEvaluator.confusion_matrix(items_list, label_str_list)  # 计算混淆矩阵
         # ModelEvaluator.pr_curves(items_list)  # 计算混淆矩阵
