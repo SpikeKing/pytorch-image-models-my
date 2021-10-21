@@ -45,11 +45,11 @@ class ImgPredictor(object):
         model.eval()
 
         config_dict = {
-            "input_size": (3, 336, 336),
-            "interpolation": "bicubic",
+            # "input_size": (3, 336, 336),
+            # "interpolation": "bicubic",
             "mean": (0.485, 0.456, 0.406),
             "std": (0.229, 0.224, 0.225),
-            "crop_pct": 1.0  # 不进行Crop
+            # "crop_pct": 1.0  # 不进行Crop
         }
 
         config = resolve_data_config(config_dict, model=model)
@@ -62,10 +62,18 @@ class ImgPredictor(object):
         """
         预处理图像
         """
+        import time
+        s1_time = time.time()
+        img_rgb = cv2.resize(img_rgb, (336, 336), interpolation=cv2.INTER_CUBIC)
         img_pil = Image.fromarray(img_rgb.astype('uint8')).convert('RGB')
+        s2_time = time.time()
+        print('[Info] 总耗时1: {}'.format(s2_time - s1_time))
         img_tensor = transform(img_pil).unsqueeze(0)  # transform and add batch dimension
+        s3_time = time.time()
+        print('[Info] 总耗时2: {}'.format(s3_time - s2_time))
         if torch.cuda.is_available():
             img_tensor = img_tensor.cuda()
+        print('[Info] 总耗时3: {}'.format(time.time() - s1_time))
         return img_tensor
 
     def predict_img(self, img_rgb):

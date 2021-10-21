@@ -63,10 +63,40 @@ class LabelDataPrepare(object):
 
         print('[Info] 全部处理完成!')
 
+    @staticmethod
+    def label_files():
+        folder_path = os.path.join(DATA_DIR, "files_text_line", "err_files")
+        excel_path = os.path.join(DATA_DIR, "files_text_line", "err_files_{}.xlsx".format(get_current_day_str()))
+        text_path = os.path.join(DATA_DIR, "files_text_line", "err_files_{}.txt".format(get_current_day_str()))
+        print('[Info] folder_path: {}'.format(folder_path))
+        paths_list, names_list = traverse_dir_files(folder_path)
+        print('[Info] paths_list: {}'.format(len(paths_list)))
+
+        labels_list = []
+        url_list = []
+        for path in paths_list:
+            folder_name = path.split("/")[-1]
+            type_name, label_name, _ = folder_name.split("_")
+            print('[Info] type_name: {}, label_name: {}'.format(type_name, label_name))
+            data_lines = read_file(path)
+            for data_line in data_lines:
+                url = data_line.split("\t")[0]
+                url_list.append([url])
+                labels_list.append("{}\t{}".format(url, str(int(label_name))))
+        random.seed(47)
+        random.shuffle(url_list)
+        print('[Info] 样本数: {}'.format(len(url_list)))
+        create_file(excel_path)
+        write_list_to_excel(excel_path, ["url"], url_list)
+        create_file(text_path)
+        write_list_to_file(text_path, labels_list)
+
+
+
 
 def main():
     ldp = LabelDataPrepare()
-    ldp.split_and_generate_files()
+    ldp.label_files()
 
 
 if __name__ == "__main__":

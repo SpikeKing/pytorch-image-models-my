@@ -11,27 +11,31 @@ import time
 
 from multiprocessing.pool import Pool
 
+from myutils.cv_utils import resize_crop_square
 from myutils.project_utils import mkdir_if_not_exist, download_url_img
 
 
-def process_sample_url(data_line, label_dir, label_idx, data_idx):
+def process_sample_url(data_line, label_dir, label_idx, data_idx, is_square=False):
     """
     处理单个样本的url, 用于多进程
     """
     _, img_bgr = download_url_img(data_line)
     file_path = os.path.join(label_dir, "{}_{}.jpg".format(str(label_idx).zfill(3), str(data_idx).zfill(7)))
+    if is_square:
+        img_bgr = resize_crop_square(img_bgr)
     cv2.imwrite(file_path, img_bgr)
     if data_idx % 1000 == 0:
         print("[Info] \t 已处理: {}".format(data_idx))
         time.sleep(10)  # 避免访问过快
 
 
-def generate_dataset_mul(dataset_dir, train_list, val_list):
+def generate_dataset_mul(dataset_dir, train_list, val_list, is_square=False):
     """
     生成数据集
     @param dataset_dir 数据集地址
     @param train_list 训练集列表，每项都是一个类别的url列表
     @param val_list 验证集列表，每项都是一个类别的url列表
+    @param is_square 是否为方形数据，避免长条型数据
     """
     print('[Info] 数据集处理开始: {}'.format(dataset_dir))
     mkdir_if_not_exist(dataset_dir)
@@ -45,7 +49,7 @@ def generate_dataset_mul(dataset_dir, train_list, val_list):
             label_dir = os.path.join(data_dir, "{}".format(str(label_idx).zfill(3)))
             mkdir_if_not_exist(label_dir)
             for data_idx, data_line in enumerate(data_lines):
-                pool_.apply_async(process_sample_url, (data_line, label_dir, label_idx, data_idx))
+                pool_.apply_async(process_sample_url, (data_line, label_dir, label_idx, data_idx, is_square))
 
     pool = Pool(processes=100)
     process_data_list(train_list, pool, train_dir)

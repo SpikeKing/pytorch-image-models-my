@@ -21,7 +21,8 @@ from root_dir import DATA_DIR
 class DatasetMaker(object):
     def __init__(self):
         self.in_folder = os.path.join(DATA_DIR, "datasets", "text_line_dataset_c4_20211013_files")
-        self.out_folder = os.path.join(DATA_DIR, "datasets", "text_line_dataset_c4_20211013")
+        # self.out_folder = os.path.join(DATA_DIR, "datasets", "text_line_dataset_c4_20211013")
+        self.out_folder = os.path.join(DATA_DIR, "datasets", "text_line_dataset_c4_20211013_square")
 
     def process(self):
         print('[Info] 输入文件夹: {}'.format(self.in_folder))
@@ -43,7 +44,7 @@ class DatasetMaker(object):
             else:
                 val_list.append(urls)
 
-        generate_dataset_mul(self.out_folder, train_list, val_list)
+        generate_dataset_mul(self.out_folder, train_list, val_list, is_square=True)
 
 
 def main():
