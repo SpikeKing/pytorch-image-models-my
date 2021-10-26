@@ -10,10 +10,12 @@ import cv2
 import numpy as np
 import torch
 from PIL import Image
+from PIL.Image import BICUBIC
 from torch.nn import functional as F
 
 import timm
 from myutils.project_utils import download_url_img, mkdir_if_not_exist
+from myutils.cv_utils import resize_min_fixed, center_crop
 from root_dir import DATA_DIR
 from timm.data import resolve_data_config
 from timm.data.transforms_factory import create_transform
@@ -45,17 +47,58 @@ class ImgPredictor(object):
         model.eval()
 
         config_dict = {
-            # "input_size": (3, 336, 336),
-            # "interpolation": "bicubic",
+            "input_size": (3, 336, 336),
+            "interpolation": "bicubic",
             "mean": (0.485, 0.456, 0.406),
             "std": (0.229, 0.224, 0.225),
-            # "crop_pct": 1.0  # 不进行Crop
+            "crop_pct": 1.0  # 不进行Crop
         }
 
         config = resolve_data_config(config_dict, model=model)
         print("[Info] config: {}".format(config))
         transform = create_transform(**config)
+
+        # from torchvision import transforms
+        #
+        # tfl = [
+        #     transforms.ToTensor(),
+        #     transforms.Normalize(
+        #         mean=torch.tensor((0.485, 0.456, 0.406)),
+        #         std=torch.tensor((0.229, 0.224, 0.225)))
+        # ]
+        #
+        # transform = transforms.Compose(tfl)
+
         return model, transform
+
+    @staticmethod
+    def img_resize_and_crop(img_pil, size=336, crop_size=336):
+        w, h = img_pil.size
+        if h <= w:
+            w = int(w * size / h)
+            h = size
+        else:
+            h = int(h * size / w)
+            w = size
+        img_pil = img_pil.resize(size=(w, h), resample=BICUBIC)
+
+        width, height = img_pil.size  # Get dimensions
+        left = (width - crop_size) / 2
+        top = (height - crop_size) / 2
+        right = (width + crop_size) / 2
+        bottom = (height + crop_size) / 2
+        img_pil = img_pil.crop((left, top, right, bottom))
+
+        return img_pil
+
+    @staticmethod
+    def img_bgr_norm(img_bgr):
+        # img_bgr = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
+        img_bgr = img_bgr.astype(np.float32)
+        for i, x, y in zip((0, 1, 2), (0.485, 0.456, 0.406), (0.229, 0.224, 0.225)):
+            img_bgr[..., i] = (img_bgr[..., i] * (1 / 255.0) - x) * (1 / y)
+        img_bgr = img_bgr.transpose((2, 0, 1))
+        return img_bgr
 
     @staticmethod
     def preprocess_img(img_rgb, transform):
@@ -64,16 +107,22 @@ class ImgPredictor(object):
         """
         import time
         s1_time = time.time()
-        img_rgb = cv2.resize(img_rgb, (336, 336), interpolation=cv2.INTER_CUBIC)
+
         img_pil = Image.fromarray(img_rgb.astype('uint8')).convert('RGB')
+        img_pil = ImgPredictor.img_resize_and_crop(img_pil)
+
         s2_time = time.time()
         print('[Info] 总耗时1: {}'.format(s2_time - s1_time))
-        img_tensor = transform(img_pil).unsqueeze(0)  # transform and add batch dimension
+
+        img_numpy = np.asarray(img_pil)
+        img_numpy = ImgPredictor.img_bgr_norm(img_numpy)
+        img_numpy = np.expand_dims(img_numpy, axis=0)
+
         s3_time = time.time()
         print('[Info] 总耗时2: {}'.format(s3_time - s2_time))
-        if torch.cuda.is_available():
-            img_tensor = img_tensor.cuda()
         print('[Info] 总耗时3: {}'.format(time.time() - s1_time))
+        print('[Info] img_numpy.shape: {}'.format(img_numpy.shape))
+        img_tensor = torch.from_numpy(img_numpy)
         return img_tensor
 
     def predict_img(self, img_rgb):

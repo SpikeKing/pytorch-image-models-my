@@ -688,6 +688,36 @@ def resize_max_fixed(img_bgr, size=1024):
     return img_bgr
 
 
+def resize_min_fixed(img_bgr, size=336, interpolation=cv2.INTER_CUBIC):
+    """
+    根据最大边resize
+    """
+    h, w, _ = img_bgr.shape
+    if h <= w:
+        w = int(w * size / h)
+        h = size
+    else:
+        h = int(h * size / w)
+        w = size
+    img_bgr = cv2.resize(img_bgr, (w, h), interpolation=interpolation)
+    return img_bgr
+
+
+def center_crop(img, width, height):
+    """
+    中间剪切
+    """
+    img_width, img_height = img.shape[1], img.shape[0]
+    crop_width = min(width, img_width)
+    crop_height = min(height, img_height)
+
+    mid_x, mid_y = int(width / 2), int(height / 2)
+    cw2, ch2 = int(crop_width / 2), int(crop_height / 2)
+    crop_img = img[mid_y - ch2:mid_y + ch2, mid_x - cw2:mid_x + cw2]
+
+    return crop_img
+
+
 def random_crop(img, height, width, sh=0, sw=0):
     """
     随机剪裁

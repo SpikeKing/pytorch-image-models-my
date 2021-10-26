@@ -52,6 +52,7 @@ class ModelEvaluator(object):
         """
         # res_dict = get_vpf_service(img_url, service_name="LvQAecdZrrxkLFs6QiUXsF")
         res_dict = get_vpf_service(img_url, service_name="ZZHxnYZnkarNPM3RvP4QZP")
+        # res_dict = get_vpf_service(img_url, service_name="cZiTBF3DaBkCkQFzoHLCHA")
         p_list = res_dict["data"]["prob_list"]
         return p_list
 
@@ -66,10 +67,11 @@ class ModelEvaluator(object):
 
     @staticmethod
     def predict_dataset():
-        val_file = os.path.join(DATA_DIR, "files_text_line_v2", "val_file_4k.txt")
-        out_file = os.path.join(DATA_DIR, "files_text_line_v2", "val_file_4k_out_batch.{}.txt".format(get_current_time_str()))
+        val_file = os.path.join(DATA_DIR, "files_text_line_v2", "val_file_4k_v2.txt")
+        out_file = os.path.join(DATA_DIR, "files_text_line_v2", "val_file_4k_v2_out_batch.{}.txt".format(get_current_time_str()))
         print('[Info] 评估文件: {}'.format(val_file))
         data_lines = read_file(val_file)
+        # data_lines = data_lines[:1000]
         pool = Pool(processes=100)
         for data_idx, data_line in enumerate(data_lines):
             # ModelEvaluator.process_line(data_idx, data_line, out_file)
@@ -187,8 +189,10 @@ class ModelEvaluator(object):
 
     @staticmethod
     def process_results():
-        in_file = os.path.join(DATA_DIR, "files_text_line_v2", "val_file_4k_out.20211021183903.txt")
+        # in_file = os.path.join(DATA_DIR, "files_text_line_v2", "val_file_4k_out.20211021183903.txt")
         # in_file = os.path.join(DATA_DIR, "files_text_line_v2", "val_file_4k_v2_out.20211021182532.txt")
+        # in_file = os.path.join(DATA_DIR, "files_text_line_v2", "val_file_4k_v2_out_m2.20211022174430.txt")
+        in_file = os.path.join(DATA_DIR, "files_text_line_v2", "val_file_4k_v2_out_batch.20211026155530.txt")
         items_list = ModelEvaluator.get_results_data(in_file)
         label_str_list = ["印刷文本", "手写文本", "艺术字", "无文字"]
         ModelEvaluator.confusion_matrix(items_list, label_str_list)  # 计算混淆矩阵
