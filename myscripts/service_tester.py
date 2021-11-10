@@ -144,7 +144,8 @@ class ServiceTester(object):
                 url, label = data_line.split("\t")
                 urls.append(url)
                 labels.append(label)
-            urls, n_sample = filter_data_list(urls, self.num_of_samples)
+            # urls, n_sample = filter_data_list(urls, self.num_of_samples)
+            n_sample = len(urls)
             print('[Info] 文件数: {}'.format(n_sample))
             for img_idx, (img_url, img_label) in enumerate(zip(urls, labels)):
                 pool.apply_async(

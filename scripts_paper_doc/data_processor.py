@@ -159,7 +159,7 @@ class DataProcessor(object):
         random.shuffle(data_lines1)
         random.shuffle(data_lines2)
         data_lines1 = data_lines1[:500]
-        data_lines2 = data_lines1[:500]
+        data_lines2 = data_lines2[:500]
 
         out_lines = []
         for data_line in data_lines1:
