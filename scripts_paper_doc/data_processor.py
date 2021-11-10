@@ -141,10 +141,41 @@ class DataProcessor(object):
         # 抽象为单独的函数
         generate_dataset_mul(dataset_dir, [train1_data, train2_data], [val1_data, val2_data])
 
+    @staticmethod
+    def generate_test_file():
+        """
+        生成测试文件
+        """
+        out_file = os.path.join(DATA_DIR, "files_paper_doc", "test_file_1000.txt")
+        print('[Info] 输出文件: {}'.format(out_file))
+        create_file(out_file)
+        file1 = os.path.join(DATA_DIR, "files_paper_doc", "doc_all.txt")
+        file2 = os.path.join(DATA_DIR, "files_paper_doc", "nat_all.txt")
+
+        data_lines1 = read_file(file1)
+        data_lines2 = read_file(file2)
+
+        random.seed(47)
+        random.shuffle(data_lines1)
+        random.shuffle(data_lines2)
+        data_lines1 = data_lines1[:500]
+        data_lines2 = data_lines1[:500]
+
+        out_lines = []
+        for data_line in data_lines1:
+            out_lines.append("\t".join([data_line, "0"]))
+        for data_line in data_lines2:
+            out_lines.append("\t".join([data_line, "1"]))
+
+        print('[Info] 输出样本数: {}'.format(len(out_lines)))
+        write_list_to_file(out_file, out_lines)
+        print('[Info] 写入文件完成: {}'.format(out_file))
+
 
 def main():
     dp = DataProcessor()
-    dp.make_dataset()
+    # dp.make_dataset()
+    dp.generate_test_file()
 
 
 if __name__ == '__main__':

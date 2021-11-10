@@ -23,19 +23,17 @@ class ServiceTester(object):
     """
     服务测试函数
     """
-    def __init__(self, in_file_or_folder, service, out_folder, label_file, num_of_samples, fixed_label):
+    def __init__(self, in_file_or_folder, service, out_folder, label_file, num_of_samples):
         self.in_file_or_folder = in_file_or_folder
         self.out_folder = out_folder
         self.service = service
         self.label_file = label_file
         self.num_of_samples = num_of_samples
-        self.fixed_label = fixed_label
         print('[Info] 输入文件或文件夹: {}'.format(self.in_file_or_folder))
         print('[Info] 服务: {}'.format(self.service))
         print('[Info] 输出文件夹: {}'.format(self.out_folder))
         print('[Info] 标签文件: {}'.format(self.label_file))
         print('[Info] 测试样本数: {}'.format(self.num_of_samples))
-        print('[Info] 固定标签值: {}'.format(self.fixed_label))
 
     @staticmethod
     def save_img_path(img_bgr, img_name, oss_root_dir=""):
@@ -82,14 +80,11 @@ class ServiceTester(object):
         print('[Info] 处理完成: {}, right: {}'.format(img_idx, p_label == r_label))
 
     @staticmethod
-    def process_img_url(img_idx, img_url, service, out_file_format, fixed_label):
+    def process_img_url(img_idx, img_url, service, out_file_format, img_label):
         res_dict = get_vpf_service(img_url=img_url, service_name=service)  # 表格
         p_label = res_dict["data"]["label"]
         p_label = int(p_label)
-        if fixed_label != -1:
-            r_label = fixed_label
-        else:
-            r_label = int(img_url.split("/")[-2])
+        r_label = int(img_label)
 
         res = [img_url, r_label, p_label]
         ServiceTester.write_results(out_file_format, res)
@@ -143,12 +138,17 @@ class ServiceTester(object):
                 pool.apply_async(
                     ServiceTester.process_img_path, (img_idx, img_path, self.service, out_file_format))
         else:
-            urls = read_file(self.in_file_or_folder)
+            data_lines = read_file(self.in_file_or_folder)
+            urls, labels = [], []
+            for data_line in data_lines:
+                url, label = data_line.split("\t")
+                urls.append(url)
+                labels.append(label)
             urls, n_sample = filter_data_list(urls, self.num_of_samples)
             print('[Info] 文件数: {}'.format(n_sample))
-            for img_idx, img_url in enumerate(urls):
+            for img_idx, (img_url, img_label) in enumerate(zip(urls, labels)):
                 pool.apply_async(
-                    ServiceTester.process_img_url, (img_idx, img_url, self.service, out_file_format, self.fixed_label))
+                    ServiceTester.process_img_url, (img_idx, img_url, self.service, out_file_format, img_label))
         pool.close()
         pool.join()
 
@@ -170,7 +170,6 @@ def parse_args():
     parser.add_argument('-o', dest='out_folder', required=False, help='输出文件夹', type=str)
     parser.add_argument('-l', dest='label_file', required=False, help='类别标签文件', type=str)
     parser.add_argument('-n', dest='num_of_samples', required=False, help='测试样本数', type=int, default=200)
-    parser.add_argument('-f', dest='fixed_label', required=False, help='固定标签值', type=int, default=-1)
 
     args = parser.parse_args()
 
@@ -190,17 +189,14 @@ def parse_args():
     arg_num_of_samples = args.num_of_samples
     print("[Info] 测试样本数: {}".format(arg_num_of_samples))
 
-    arg_fixed_label = args.fixed_label
-    print("[Info] 固定标签值: {}".format(arg_fixed_label))
 
-    return arg_in_file_or_folder, arg_service, arg_out_folder, arg_label_file, arg_num_of_samples, arg_fixed_label
+    return arg_in_file_or_folder, arg_service, arg_out_folder, arg_label_file, arg_num_of_samples
 
 
 def main():
     res_list = parse_args()
-    arg_in_file_or_folder, arg_service, arg_out_folder, arg_label_file, arg_num_of_samples, arg_fixed_label = res_list
-    st = ServiceTester(arg_in_file_or_folder, arg_service, arg_out_folder,
-                       arg_label_file, arg_num_of_samples, arg_fixed_label)
+    arg_in_file_or_folder, arg_service, arg_out_folder, arg_label_file, arg_num_of_samples = res_list
+    st = ServiceTester(arg_in_file_or_folder, arg_service, arg_out_folder, arg_label_file, arg_num_of_samples)
     st.process_folder()
 
 
