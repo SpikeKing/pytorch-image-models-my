@@ -10,12 +10,12 @@ import cv2
 import numpy as np
 import torch
 from PIL import Image
-from PIL.Image import BICUBIC
+from PIL.Image import BICUBIC, NEAREST
 from torch.nn import functional as F
 
 import timm
 from myutils.project_utils import download_url_img, mkdir_if_not_exist
-from myutils.cv_utils import resize_min_fixed, center_crop
+from myutils.cv_utils import *
 from root_dir import DATA_DIR
 from timm.data import resolve_data_config
 from timm.data.transforms_factory import create_transform
@@ -71,8 +71,22 @@ class ImgPredictor(object):
 
         return model, transform
 
+    # @staticmethod
+    # def img_resize_and_crop(img_pil, size=336):
+    #     img_rgb = np.array(img_pil)
+    #     h, w, _ = img_rgb.shape
+    #     x = min(h, w)
+    #     img_rgb = center_crop(img_rgb, x, x)
+    #     show_img_bgr(img_rgb)
+    #     img_pil = Image.fromarray(img_rgb.astype('uint8')).convert('RGB')
+    #     img_pil = img_pil.resize(size=(size, size), resample=BICUBIC)
+    #     return img_pil
+
     @staticmethod
     def img_resize_and_crop(img_pil, size=336, crop_size=336):
+        """
+        替换transform的resize和crop，提升大约8ms
+        """
         w, h = img_pil.size
         if h <= w:
             w = int(w * size / h)
@@ -260,6 +274,28 @@ def main_4_text_line_clz():
     # me.save_pt(os.path.join(DATA_DIR, "pt_models"))  # 存储PT模型
 
 
+def main_4_fonts_clz():
+    img_url = "https://quark-cv-data.oss-cn-hangzhou.aliyuncs.com/zhengsheng.wcl/Fonts-Clz/datasets/fangsongti/" \
+              "00057e0d-51f4-4879-8116-cacb810482ce.jpg"  # 0, 仿宋体
+    # img_url = "https://quark-cv-data.oss-cn-hangzhou.aliyuncs.com/zhengsheng.wcl/Fonts-Clz/datasets/heiti/" \
+    #           "000005d0-6c58-4e29-a817-207cb4ba3183.jpg"  # 1, 黑体
+    # img_url = "https://quark-cv-data.oss-cn-hangzhou.aliyuncs.com/zhengsheng.wcl/Fonts-Clz/datasets/kaiti/" \
+    #           "0001f011-dc27-405a-9662-a74ef5b98b83.jpg"  # 2, 楷体
+    # img_url = "https://quark-cv-data.oss-cn-hangzhou.aliyuncs.com/zhengsheng.wcl/Fonts-Clz/datasets/lishu/" \
+    #           "0002149e-c84f-412c-9507-e88a78163ba1.jpg"  # 3, 隶书
+    # img_url = "https://quark-cv-data.oss-cn-hangzhou.aliyuncs.com/zhengsheng.wcl/Fonts-Clz/datasets/songti/" \
+    #           "000d307a-cae6-4170-a73d-82963b12b7e3.jpg"  # 4, 宋体
+    # img_url = "https://quark-cv-data.oss-cn-hangzhou.aliyuncs.com/zhengsheng.wcl/Fonts-Clz/datasets/weiruanyahei/" \
+    #           "000b1fa4-66d0-4004-8d3a-263891a996af.jpg"  # 5, 微软雅黑
+    model_path = os.path.join(DATA_DIR, "models", "model_best.pth.tar")
+    base_net = "efficientnet_b2"
+    num_classes = 6
+    me = ImgPredictor(model_path, base_net, num_classes)
+    top5_catid, top5_prob = me.predict_img_url(img_url)
+    print('[Info] 预测类别: {}'.format(top5_catid))
+    print('[Info] 预测概率: {}'.format(top5_prob))
+
+
 if __name__ == '__main__':
     # main_4_doc_clz()
-    main_4_text_line_clz()
+    main_4_fonts_clz()
