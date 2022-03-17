@@ -121,6 +121,8 @@ class ImgPredictor(object):
         ts.save(f)
         print('[Info] 转换ts完成! ')
 
+        if torch.cuda.is_available():
+            img_tensor = img_tensor.cuda()
         print('[Info] 模型输入: {}'.format(img_tensor.shape))
         with torch.no_grad():
             out = self.model(img_tensor)
