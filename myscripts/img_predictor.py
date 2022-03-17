@@ -5,11 +5,11 @@ Copyright (c) 2021. All rights reserved.
 Created by C. L. Wang on 15.9.21
 """
 import os
+import timm
 
 import torch
 from PIL import Image
 from PIL.Image import BICUBIC
-from timm import create_model
 from torch.nn import functional as F
 
 from myutils.cv_utils import *
@@ -37,7 +37,7 @@ class ImgPredictor(object):
         """
         加载模型
         """
-        model = create_model(model_name=base_net, pretrained=False,
+        model = timm.create_model(model_name=base_net, pretrained=False,
                                   checkpoint_path=model_path, num_classes=num_classes)
         if torch.cuda.is_available():
             print('[Info] cuda on!!!')
