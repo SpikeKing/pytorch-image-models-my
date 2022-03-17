@@ -6,16 +6,14 @@ Created by C. L. Wang on 15.9.21
 """
 import os
 
-import cv2
-import numpy as np
 import torch
 from PIL import Image
-from PIL.Image import BICUBIC, NEAREST
+from PIL.Image import BICUBIC
+from timm import create_model
 from torch.nn import functional as F
 
-import timm
-from myutils.project_utils import download_url_img, mkdir_if_not_exist
 from myutils.cv_utils import *
+from myutils.project_utils import download_url_img, mkdir_if_not_exist
 from root_dir import DATA_DIR
 from timm.data import resolve_data_config
 from timm.data.transforms_factory import create_transform
@@ -39,7 +37,7 @@ class ImgPredictor(object):
         """
         加载模型
         """
-        model = timm.create_model(model_name=base_net, pretrained=False,
+        model = create_model(model_name=base_net, pretrained=False,
                                   checkpoint_path=model_path, num_classes=num_classes)
         if torch.cuda.is_available():
             print('[Info] cuda on!!!')
@@ -58,29 +56,7 @@ class ImgPredictor(object):
         print("[Info] config: {}".format(config))
         transform = create_transform(**config)
 
-        # from torchvision import transforms
-        #
-        # tfl = [
-        #     transforms.ToTensor(),
-        #     transforms.Normalize(
-        #         mean=torch.tensor((0.485, 0.456, 0.406)),
-        #         std=torch.tensor((0.229, 0.224, 0.225)))
-        # ]
-        #
-        # transform = transforms.Compose(tfl)
-
         return model, transform
-
-    # @staticmethod
-    # def img_resize_and_crop(img_pil, size=336):
-    #     img_rgb = np.array(img_pil)
-    #     h, w, _ = img_rgb.shape
-    #     x = min(h, w)
-    #     img_rgb = center_crop(img_rgb, x, x)
-    #     show_img_bgr(img_rgb)
-    #     img_pil = Image.fromarray(img_rgb.astype('uint8')).convert('RGB')
-    #     img_pil = img_pil.resize(size=(size, size), resample=BICUBIC)
-    #     return img_pil
 
     @staticmethod
     def img_resize_and_crop(img_pil, size=336, crop_size=336):
@@ -107,10 +83,11 @@ class ImgPredictor(object):
 
     @staticmethod
     def img_bgr_norm(img_bgr):
-        # img_bgr = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
         img_bgr = img_bgr.astype(np.float32)
         for i, x, y in zip((0, 1, 2), (0.485, 0.456, 0.406), (0.229, 0.224, 0.225)):
-            img_bgr[..., i] = (img_bgr[..., i] * (1 / 255.0) - x) * (1 / y)
+            tmp1 = img_bgr[:, :, i]
+            tmp2 = (tmp1 * (1 / 255.0) - x) * (1 / y)
+            img_bgr[:, :, i] = tmp2
         img_bgr = img_bgr.transpose((2, 0, 1))
         return img_bgr
 
@@ -119,24 +96,9 @@ class ImgPredictor(object):
         """
         预处理图像
         """
-        import time
-        s1_time = time.time()
-
-        img_pil = Image.fromarray(img_rgb.astype('uint8')).convert('RGB')
-        img_pil = ImgPredictor.img_resize_and_crop(img_pil)
-
-        s2_time = time.time()
-        print('[Info] 总耗时1: {}'.format(s2_time - s1_time))
-
-        img_numpy = np.asarray(img_pil)
-        img_numpy = ImgPredictor.img_bgr_norm(img_numpy)
-        img_numpy = np.expand_dims(img_numpy, axis=0)
-
-        s3_time = time.time()
-        print('[Info] 总耗时2: {}'.format(s3_time - s2_time))
-        print('[Info] 总耗时3: {}'.format(time.time() - s1_time))
-        print('[Info] img_numpy.shape: {}'.format(img_numpy.shape))
-        img_tensor = torch.from_numpy(img_numpy)
+        img_pil = Image.fromarray(img_rgb.astype('uint8'))
+        img_tensor = transform(img_pil)
+        img_tensor = img_tensor.unsqueeze(0)
         return img_tensor
 
     def predict_img(self, img_rgb):
@@ -145,6 +107,15 @@ class ImgPredictor(object):
         """
         print('[Info] 预测图像尺寸: {}'.format(img_rgb.shape))
         img_tensor = self.preprocess_img(img_rgb, self.transform)
+
+        # 存储ts模型
+        img = torch.zeros(1, 3, 336, 336).to(torch.device('cuda'))
+        f = self.model_path.replace('.pth.tar', 'cuda_20220317.ts')  # filename
+        with torch.no_grad():
+            ts = torch.jit.trace(self.model, img)
+        ts.save(f)
+        print('[Info] 转换ts完成! ')
+
         print('[Info] 模型输入: {}'.format(img_tensor.shape))
         with torch.no_grad():
             out = self.model(img_tensor)
@@ -225,11 +196,6 @@ class ImgPredictor(object):
 
 def main_4_doc_clz():
     img_path = os.path.join(DATA_DIR, "document_dataset_mini", "train", "000", "train_040000_000.jpg")
-    # img_path = os.path.join(DATA_DIR, "document_dataset_mini", "train", "001", "train_060000_001.jpg")
-    # img_path = os.path.join(DATA_DIR, "document_dataset_mini", "train", "002", "train_020000_002.jpg")
-    # img_path = os.path.join(DATA_DIR, "document_dataset_mini", "train", "003", "train_100000_003.jpg")
-    # img_path = os.path.join(DATA_DIR, "document_dataset_mini", "train", "004", "train_000000_004.jpg")
-    # img_path = os.path.join(DATA_DIR, "document_dataset_mini", "train", "005", "train_080000_005.jpg")
 
     case_url = "http://quark-cv-data.oss-cn-hangzhou.aliyuncs.com/gaoyan/project/gt_imaage_for_biaozhu3/" \
                "O1CN0100fHnP21yK9SLVNC9_!!6000000007053-0-quark.jpg"
@@ -275,21 +241,14 @@ def main_4_text_line_clz():
 
 
 def main_4_fonts_clz():
-    img_url = "https://quark-cv-data.oss-cn-hangzhou.aliyuncs.com/zhengsheng.wcl/Fonts-Clz/datasets/fangsongti/" \
-              "00057e0d-51f4-4879-8116-cacb810482ce.jpg"  # 0, 仿宋体
-    # img_url = "https://quark-cv-data.oss-cn-hangzhou.aliyuncs.com/zhengsheng.wcl/Fonts-Clz/datasets/heiti/" \
-    #           "000005d0-6c58-4e29-a817-207cb4ba3183.jpg"  # 1, 黑体
-    # img_url = "https://quark-cv-data.oss-cn-hangzhou.aliyuncs.com/zhengsheng.wcl/Fonts-Clz/datasets/kaiti/" \
-    #           "0001f011-dc27-405a-9662-a74ef5b98b83.jpg"  # 2, 楷体
-    # img_url = "https://quark-cv-data.oss-cn-hangzhou.aliyuncs.com/zhengsheng.wcl/Fonts-Clz/datasets/lishu/" \
-    #           "0002149e-c84f-412c-9507-e88a78163ba1.jpg"  # 3, 隶书
-    # img_url = "https://quark-cv-data.oss-cn-hangzhou.aliyuncs.com/zhengsheng.wcl/Fonts-Clz/datasets/songti/" \
-    #           "000d307a-cae6-4170-a73d-82963b12b7e3.jpg"  # 4, 宋体
-    # img_url = "https://quark-cv-data.oss-cn-hangzhou.aliyuncs.com/zhengsheng.wcl/Fonts-Clz/datasets/weiruanyahei/" \
-    #           "000b1fa4-66d0-4004-8d3a-263891a996af.jpg"  # 5, 微软雅黑
-    model_path = os.path.join(DATA_DIR, "models", "model_best.pth.tar")
+    img_url = "http://sm-compute-public-data.oss-cn-beijing.aliyuncs.com/zhengsheng.wcl/document_style_manuel/datasets/regions-20220315/3ba0d6299db446529e959020aa62ed40_pos_000000.jpg"
+    img_url = "http://sm-compute-public-data.oss-cn-beijing.aliyuncs.com/zhengsheng.wcl/document_style_manuel/datasets/regions-20220315/00185d07707c40c5a7387e4445c6c94a_pos_000003.jpg"
+    img_url = "http://sm-compute-public-data.oss-cn-beijing.aliyuncs.com/zhengsheng.wcl/document_style_manuel/datasets/regions-20220315/ffbb81ce0fe5454e96112b6e2bfaaf4e_neg_000002.jpg"
+
+    img_path = os.path.join(DATA_DIR, "datasets/ch_en_line_v1/train/000/train_00000000_000.jpg")
+    model_path = os.path.join(DATA_DIR, "models", "regions_clz_best_20220316_checkpoint-52.pth.tar")
     base_net = "efficientnet_b2"
-    num_classes = 6
+    num_classes = 3
     me = ImgPredictor(model_path, base_net, num_classes)
     top5_catid, top5_prob = me.predict_img_url(img_url)
     print('[Info] 预测类别: {}'.format(top5_catid))
