@@ -5,13 +5,18 @@ Copyright (c) 2021. All rights reserved.
 Created by C. L. Wang on 15.9.21
 """
 import os
-import timm
+import sys
 
 import torch
 from PIL import Image
 from PIL.Image import BICUBIC
 from torch.nn import functional as F
 
+p = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if p not in sys.path:
+    sys.path.append(p)
+
+import timm
 from myutils.cv_utils import *
 from myutils.project_utils import download_url_img, mkdir_if_not_exist
 from root_dir import DATA_DIR
